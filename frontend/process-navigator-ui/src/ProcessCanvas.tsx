@@ -140,7 +140,7 @@ export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitC
       <g className="nodes" onClick={event => event.stopPropagation()}>{process.nodes.map(node => <NodeShape key={node.id} node={node} selected={node.id === selectedId} related={!!selectedId && relatedNodes.has(node.id) && node.id !== selectedId} muted={!!selectedId && !relatedNodes.has(node.id)} showOverlays={zoom >= 1.25 || node.id === selectedId} onSelect={() => onSelect(node)}/>)}</g>
     </svg>
     <div className="zoom-readout">{Math.round(zoom * 100)}%</div>
-    {activeLane && <div className="lane-badge"><span>Текущая дорожка</span><strong>{activeLane.name}</strong></div>}
+    {activeLane && (zoom >= 1.2 || selectedNode) && <div className="lane-badge"><span>{selectedNode ? 'Ответственная дорожка' : 'Текущая дорожка'}</span><strong>{activeLane.name}</strong></div>}
     <svg className="minimap" viewBox={`0 0 ${world.width} ${world.height}`} onClick={centerFromMinimap} aria-label="Мини-карта процесса">
       <rect className="minimap-bg" width={world.width} height={world.height}/>
       {process.lanes.map(lane => <rect key={lane.id} className="minimap-lane" x="45" y={lane.y} width="1570" height={lane.height}/>)}
