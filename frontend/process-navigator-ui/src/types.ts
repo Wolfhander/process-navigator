@@ -9,3 +9,5 @@ export type ProcessModel = { id: string; name: string; version: string; owner: s
 export type ProcessSummary = { id: string; name: string; version: string; owner: string; status: string; nodeCount: number; laneCount: number; hasDraft: boolean; draftVersion?: string };
 export type ProcessImportResult = { process: ProcessSummary; warnings: string[] };
 export type ProcessVersion = { version: string; status: 'Published' | 'Draft' | 'Archived'; createdAt: string };
+export type UserProfile = { id: string; displayName: string; role: string; roleName: string; permissions: string[] };
+export type Session = { currentUser: UserProfile; availableUsers: UserProfile[] };

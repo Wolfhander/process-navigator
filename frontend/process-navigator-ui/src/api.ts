@@ -1,4 +1,14 @@
-import type { ProcessImportResult, ProcessModel, ProcessSummary, ProcessVersion } from './types';
+import type { ProcessImportResult, ProcessModel, ProcessSummary, ProcessVersion, Session } from './types';
+
+let activeRole = localStorage.getItem('pn.demoRole') ?? 'employee';
+export function setActiveRole(role: string) { activeRole = role; localStorage.setItem('pn.demoRole', role); }
+const roleHeaders = () => ({ 'X-Process-Navigator-Role': activeRole });
+
+export async function loadSession(signal?: AbortSignal): Promise<Session> {
+  const response = await fetch('/api/session', { signal, headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить профиль пользователя.'));
+  return response.json() as Promise<Session>;
+}
 
 async function errorMessage(response: Response, fallback: string) {
   try {
@@ -10,32 +20,32 @@ async function errorMessage(response: Response, fallback: string) {
 }
 
 export async function loadProcess(id: string, signal?: AbortSignal, draft = false): Promise<ProcessModel> {
-  const response = await fetch(`/api/processes/${encodeURIComponent(id)}${draft ? '?draft=true' : ''}`, { signal });
+  const response = await fetch(`/api/processes/${encodeURIComponent(id)}${draft ? '?draft=true' : ''}`, { signal, headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить процесс.'));
   return response.json() as Promise<ProcessModel>;
 }
 
 export async function createDraft(id: string): Promise<ProcessSummary> {
-  const response = await fetch(`/api/processes/${encodeURIComponent(id)}/draft`, { method: 'POST' });
+  const response = await fetch(`/api/processes/${encodeURIComponent(id)}/draft`, { method: 'POST', headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось создать новую редакцию.'));
   return response.json() as Promise<ProcessSummary>;
 }
 
 export async function replaceDraft(id: string, bpmnFile: File, contextFile?: File): Promise<ProcessImportResult> {
   const body = new FormData(); body.append('bpmnFile', bpmnFile); if (contextFile) body.append('contextFile', contextFile);
-  const response = await fetch(`/api/processes/${encodeURIComponent(id)}/draft`, { method: 'PUT', body });
+  const response = await fetch(`/api/processes/${encodeURIComponent(id)}/draft`, { method: 'PUT', body, headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось заменить BPMN черновика.'));
   return response.json() as Promise<ProcessImportResult>;
 }
 
 export async function publishDraft(id: string): Promise<ProcessSummary> {
-  const response = await fetch(`/api/processes/${encodeURIComponent(id)}/publish`, { method: 'POST' });
+  const response = await fetch(`/api/processes/${encodeURIComponent(id)}/publish`, { method: 'POST', headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось опубликовать редакцию.'));
   return response.json() as Promise<ProcessSummary>;
 }
 
 export async function loadVersions(id: string): Promise<ProcessVersion[]> {
-  const response = await fetch(`/api/processes/${encodeURIComponent(id)}/versions`);
+  const response = await fetch(`/api/processes/${encodeURIComponent(id)}/versions`, { headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить историю версий.'));
   return response.json() as Promise<ProcessVersion[]>;
 }
@@ -56,7 +66,7 @@ export async function importProcess(bpmnFile: File, contextFile?: File): Promise
   const body = new FormData();
   body.append('bpmnFile', bpmnFile);
   if (contextFile) body.append('contextFile', contextFile);
-  const response = await fetch('/api/processes/import', { method: 'POST', body });
+  const response = await fetch('/api/processes/import', { method: 'POST', body, headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось импортировать процесс.'));
   return response.json() as Promise<ProcessImportResult>;
 }
