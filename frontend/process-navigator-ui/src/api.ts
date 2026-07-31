@@ -40,6 +40,12 @@ export async function loadVersions(id: string): Promise<ProcessVersion[]> {
   return response.json() as Promise<ProcessVersion[]>;
 }
 
+export async function loadArchivedProcess(id: string, version: string, signal?: AbortSignal): Promise<ProcessModel> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(id)}/versions/${encodeURIComponent(version)}`, { signal });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить архивную версию.'));
+  return response.json() as Promise<ProcessModel>;
+}
+
 export async function loadProcessCatalog(signal?: AbortSignal): Promise<ProcessSummary[]> {
   const response = await fetch('/api/processes', { signal });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить каталог процессов.'));

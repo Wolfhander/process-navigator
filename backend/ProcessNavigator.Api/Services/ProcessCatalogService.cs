@@ -100,6 +100,16 @@ public sealed partial class ProcessCatalogService(BpmnProcessLoader loader)
         return await loader.LoadFilesAsync(bpmnPath, contextPath, processId, cancellationToken);
     }
 
+    public async Task<ProcessModel> LoadArchivedAsync(string processId, string version, CancellationToken cancellationToken = default)
+    {
+        var directory = Path.Combine(VersionRoot, processId, SafeFilePart(version));
+        var bpmnPath = Path.Combine(directory, "process.bpmn");
+        var contextPath = Path.Combine(directory, "process.context.json");
+        if (!File.Exists(bpmnPath) || !File.Exists(contextPath))
+            throw new FileNotFoundException($"Archived version '{version}' of process '{processId}' was not found.");
+        return await loader.LoadFilesAsync(bpmnPath, contextPath, processId, cancellationToken);
+    }
+
     public async Task<ProcessSummaryModel> CreateDraftAsync(string processId, CancellationToken cancellationToken = default)
     {
         var published = await loader.LoadAsync(processId, cancellationToken);
@@ -194,7 +204,10 @@ public sealed partial class ProcessCatalogService(BpmnProcessLoader loader)
         var draft = await TryLoadDraftAsync(processId, cancellationToken);
         if (draft is not null)
             versions.Add(new ProcessVersionModel(draft.Version, "Draft", File.GetLastWriteTimeUtc(DraftPaths(processId).Context)));
-        return versions.OrderByDescending(item => item.CreatedAt).ToArray();
+        return versions
+            .OrderBy(item => item.Status switch { "Draft" => 0, "Published" => 1, _ => 2 })
+            .ThenByDescending(item => VersionSortKey(item.Version))
+            .ToArray();
     }
 
     private static ProcessSummaryModel ToSummary(ProcessModel process, ProcessModel? draft = null) => new(
@@ -237,6 +250,18 @@ public sealed partial class ProcessCatalogService(BpmnProcessLoader loader)
     }
 
     private static string SafeFilePart(string value) => Regex.Replace(value, "[^A-Za-z0-9._-]", "_");
+
+    private static long VersionSortKey(string value)
+    {
+        var parts = value.Split('.');
+        long result = 0;
+        for (var index = 0; index < Math.Min(parts.Length, 4); index++)
+        {
+            result = result * 10_000 + (int.TryParse(parts[index], out var part) ? Math.Clamp(part, 0, 9_999) : 0);
+        }
+        for (var index = parts.Length; index < 4; index++) result *= 10_000;
+        return result;
+    }
 
     private static IReadOnlyList<string> ContextWarnings(ProcessModel process)
     {

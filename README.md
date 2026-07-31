@@ -74,3 +74,10 @@ validation rules.
 - Draft BPMN can be replaced and validated without affecting employees.
 - Publication archives the previous version and promotes the draft atomically.
 - Version history is available from the process toolbar.
+
+## Commit 0007 scope
+
+- Version history is ordered by lifecycle state and semantic version.
+- Archived BPMN editions can be opened directly from the history dialog.
+- Archive view is explicitly marked read-only and keeps the full process canvas.
+- One action returns the user to the currently published process.

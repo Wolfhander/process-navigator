@@ -37,6 +37,13 @@ app.MapGet("/api/processes/{processId}/versions", async (string processId, Proce
     catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
 });
 
+app.MapGet("/api/processes/{processId}/versions/{version}", async (string processId, string version, ProcessCatalogService catalog, CancellationToken cancellationToken) =>
+{
+    try { return Results.Ok(await catalog.LoadArchivedAsync(processId, version, cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Archived version '{version}' was not found." }); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Archived BPMN validation failed"); }
+});
+
 app.MapPost("/api/processes/{processId}/draft", async (string processId, ProcessCatalogService catalog, CancellationToken cancellationToken) =>
 {
     try { return Results.Ok(await catalog.CreateDraftAsync(processId, cancellationToken)); }

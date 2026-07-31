@@ -45,6 +45,7 @@ The API rejects a diagram with HTTP `422` when:
 - `PUT /api/processes/{id}/draft` replaces and validates the draft files.
 - `POST /api/processes/{id}/publish` archives the active edition and publishes the draft.
 - `GET /api/processes/{id}/versions` returns published, draft and archived revisions.
+- `GET /api/processes/{id}/versions/{version}` loads an archived revision for read-only viewing.
 - `GET /api/health` reports API availability.
 
 Uploaded BPMN files are limited to 2 MB. The process identifier must be unique
