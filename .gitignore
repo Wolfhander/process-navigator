@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+.pnpm-store/
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.tsbuildinfo
+frontend/process-navigator-ui/vite.config.js
+frontend/process-navigator-ui/vite.config.d.ts
