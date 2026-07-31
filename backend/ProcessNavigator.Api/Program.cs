@@ -2,12 +2,10 @@ using System.Text.Json;
 using ProcessNavigator.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
 var app = builder.Build();
-if (app.Environment.IsDevelopment()) app.MapOpenApi();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "ProcessNavigator.Api" }));
 
@@ -24,4 +22,3 @@ app.MapGet("/api/processes/{processId}", async (string processId, IWebHostEnviro
 });
 
 app.Run();
-

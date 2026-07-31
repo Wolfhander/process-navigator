@@ -5,7 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="Data\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Update="Data\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
-
