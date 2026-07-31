@@ -32,3 +32,10 @@ Open `http://localhost:5173`. The frontend proxies `/api` to the API at
 - Element selection and contextual instructions, artifacts and ERP actions.
 - Fit-to-screen, zoom controls, responsive layout and loading/error states.
 
+## Commit 0002 scope
+
+- Cursor-centered wheel zoom from 100% to 400%.
+- Canvas panning with pointer capture while preserving the selected element.
+- Working toolbar controls for zooming and fitting the complete process.
+- Interactive minimap with the current viewport and selected task.
+- Double-click shortcut to restore the complete process view.
