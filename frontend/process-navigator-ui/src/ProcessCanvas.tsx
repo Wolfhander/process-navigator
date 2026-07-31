@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { resolveCapabilities } from './capabilities';
 import type { Edge, Point, ProcessModel, ProcessNode } from './types';
 
 type ZoomCommand = { id: number; factor: number };
@@ -49,9 +50,13 @@ function zoomAt(camera: Camera, factor: number, anchor: Point): Camera {
   });
 }
 
-function NodeShape({ node, selected, onSelect }: { node: ProcessNode; selected: boolean; onSelect: () => void }) {
+function NodeShape({ node, selected, related, muted, showOverlays, onSelect }: { node: ProcessNode; selected: boolean; related: boolean; muted: boolean; showOverlays: boolean; onSelect: () => void }) {
+  const capabilities = resolveCapabilities(node);
+  const actionCount = capabilities.filter(capability => capability.kind === 'action').length;
+  const artifactCount = capabilities.filter(capability => capability.kind === 'artifact').length;
+  const overlayLabel = [actionCount ? 'ERP' : '', artifactCount ? `${artifactCount} мат.` : ''].filter(Boolean).join(' · ');
   const common = {
-    className: `node node--${node.type}${selected ? ' is-selected' : ''}`,
+    className: `node node--${node.type}${selected ? ' is-selected' : ''}${related ? ' is-related' : ''}${muted ? ' is-muted' : ''}`,
     onClick: onSelect,
     onPointerDown: (event: React.PointerEvent) => event.stopPropagation(),
     role: 'button',
@@ -61,7 +66,7 @@ function NodeShape({ node, selected, onSelect }: { node: ProcessNode; selected: 
   const cx = node.x + node.width / 2, cy = node.y + node.height / 2;
   if (node.type === 'startEvent' || node.type === 'endEvent') return <g {...common}><circle cx={cx} cy={cy} r={node.width / 2 - 3}/>{node.type === 'endEvent' && <circle cx={cx} cy={cy} r={node.width / 2 - 7}/>}<title>{node.name}</title></g>;
   if (node.type === 'exclusiveGateway') return <g {...common}><path d={`M ${cx} ${node.y} L ${node.x + node.width} ${cy} L ${cx} ${node.y + node.height} L ${node.x} ${cy} Z`}/><path className="gateway-mark" d={`M ${cx-9} ${cy-9} L ${cx+9} ${cy+9} M ${cx+9} ${cy-9} L ${cx-9} ${cy+9}`}/><title>{node.name}</title></g>;
-  return <g {...common}><rect x={node.x} y={node.y} width={node.width} height={node.height} rx="12"/><foreignObject x={node.x + 10} y={node.y + 8} width={node.width - 20} height={node.height - 16}><div className="node-label">{node.name}</div></foreignObject></g>;
+  return <g {...common}><rect x={node.x} y={node.y} width={node.width} height={node.height} rx="12"/><foreignObject x={node.x + 10} y={node.y + 8} width={node.width - 20} height={node.height - 16}><div className="node-label">{node.name}</div></foreignObject>{showOverlays && overlayLabel && <g className="capability-overlay" transform={`translate(${node.x + node.width - 5} ${node.y - 5})`}><rect x={-72} y={-18} width={72} height={22} rx={11}/><text x={-36} y={-4} textAnchor="middle">{overlayLabel}</text></g>}</g>;
 }
 
 export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitCommand }: Props) {
@@ -70,6 +75,17 @@ export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitC
   const suppressClickRef = useRef(false);
   const [camera, setCamera] = useState<Camera>(world);
   const zoom = world.width / camera.width;
+  const selectedNode = process.nodes.find(node => node.id === selectedId);
+  const activeLane = process.lanes.find(lane => lane.id === selectedNode?.laneId)
+    ?? process.lanes.find(lane => camera.y + camera.height / 2 >= lane.y && camera.y + camera.height / 2 < lane.y + lane.height);
+  const focusedEdges = new Set(process.edges.filter(edge => edge.sourceId === selectedId || edge.targetId === selectedId).map(edge => edge.id));
+  const relatedNodes = new Set<string>([selectedId ?? '']);
+  process.edges.forEach(edge => {
+    if (focusedEdges.has(edge.id)) {
+      relatedNodes.add(edge.sourceId);
+      relatedNodes.add(edge.targetId);
+    }
+  });
 
   useEffect(() => { if (zoomCommand) setCamera(current => zoomAt(current, zoomCommand.factor, { x: current.x + current.width / 2, y: current.y + current.height / 2 })); }, [zoomCommand]);
   useEffect(() => { if (fitCommand !== undefined) setCamera(world); }, [fitCommand]);
@@ -117,13 +133,14 @@ export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitC
 
   return <div className="canvas-wrap">
     <svg ref={svgRef} className="canvas" viewBox={`${camera.x} ${camera.y} ${camera.width} ${camera.height}`} preserveAspectRatio="none" onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={stopPan} onPointerCancel={stopPan} onDoubleClick={() => setCamera(world)} onClick={() => { if (suppressClickRef.current) suppressClickRef.current = false; else onSelect(); }} aria-label="Диаграмма процесса">
-      <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#dfe2dc" strokeWidth="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#47524b"/></marker></defs>
+      <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#dfe2dc" strokeWidth="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#47524b"/></marker><marker id="arrow-focus" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d4673c"/></marker></defs>
       <rect width={world.width} height={world.height} fill="url(#grid)"/>
       <g className="lanes">{process.lanes.map(lane => <g key={lane.id}><rect className="lane" x="45" y={lane.y} width="1570" height={lane.height}/><foreignObject x="45" y={lane.y} width="55" height={lane.height}><div className="lane-title">{lane.name}</div></foreignObject></g>)}</g>
-      <g className="edges">{process.edges.map(edge => { const label = labelPoint(edge); return <g key={edge.id}><path d={pathFor(edge)} markerEnd="url(#arrow)"/><text x={label.x} y={label.y} textAnchor="middle">{edge.label}</text></g>; })}</g>
-      <g className="nodes" onClick={event => event.stopPropagation()}>{process.nodes.map(node => <NodeShape key={node.id} node={node} selected={node.id === selectedId} onSelect={() => onSelect(node)}/>)}</g>
+      <g className="edges">{process.edges.map(edge => { const label = labelPoint(edge); const focused = !!selectedId && focusedEdges.has(edge.id); return <g key={edge.id} className={`${focused ? 'is-focused' : ''}${selectedId && !focused ? ' is-muted' : ''}`}><path d={pathFor(edge)} markerEnd={focused ? 'url(#arrow-focus)' : 'url(#arrow)'}/><text x={label.x} y={label.y} textAnchor="middle">{edge.label}</text></g>; })}</g>
+      <g className="nodes" onClick={event => event.stopPropagation()}>{process.nodes.map(node => <NodeShape key={node.id} node={node} selected={node.id === selectedId} related={!!selectedId && relatedNodes.has(node.id) && node.id !== selectedId} muted={!!selectedId && !relatedNodes.has(node.id)} showOverlays={zoom >= 1.25 || node.id === selectedId} onSelect={() => onSelect(node)}/>)}</g>
     </svg>
     <div className="zoom-readout">{Math.round(zoom * 100)}%</div>
+    {activeLane && <div className="lane-badge"><span>Текущая дорожка</span><strong>{activeLane.name}</strong></div>}
     <svg className="minimap" viewBox={`0 0 ${world.width} ${world.height}`} onClick={centerFromMinimap} aria-label="Мини-карта процесса">
       <rect className="minimap-bg" width={world.width} height={world.height}/>
       {process.lanes.map(lane => <rect key={lane.id} className="minimap-lane" x="45" y={lane.y} width="1570" height={lane.height}/>)}

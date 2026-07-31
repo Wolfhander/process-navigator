@@ -39,3 +39,11 @@ Open `http://localhost:5173`. The frontend proxies `/api` to the API at
 - Working toolbar controls for zooming and fitting the complete process.
 - Interactive minimap with the current viewport and selected task.
 - Double-click shortcut to restore the complete process view.
+
+## Commit 0003 scope
+
+- Graph-based focus for the selected element and its adjacent route.
+- Persistent current-lane indicator while zooming and panning.
+- Collapsed context rail when no BPMN element is selected.
+- Capability provider registry for ERP actions and process artifacts.
+- Progressive capability badges at detailed zoom levels.
