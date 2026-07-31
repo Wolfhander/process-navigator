@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, FileJson2, FileUp, Upload, X } from 'lucide-react';
-import { importProcess } from './api';
+import { importProcess, replaceDraft } from './api';
 import type { ProcessImportResult } from './types';
 
-export function ImportDialog({ onClose, onImported }: { onClose: () => void; onImported: (result: ProcessImportResult) => void }) {
+export function ImportDialog({ onClose, onImported, processId }: { onClose: () => void; onImported: (result: ProcessImportResult) => void; processId?: string }) {
   const [bpmnFile, setBpmnFile] = useState<File>();
   const [contextFile, setContextFile] = useState<File>();
   const [result, setResult] = useState<ProcessImportResult>();
@@ -14,7 +14,7 @@ export function ImportDialog({ onClose, onImported }: { onClose: () => void; onI
     event.preventDefault();
     if (!bpmnFile) return;
     setBusy(true); setError(''); setResult(undefined);
-    try { setResult(await importProcess(bpmnFile, contextFile)); }
+    try { setResult(processId ? await replaceDraft(processId, bpmnFile, contextFile) : await importProcess(bpmnFile, contextFile)); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Не удалось импортировать процесс.'); }
     finally { setBusy(false); }
   };
@@ -22,7 +22,7 @@ export function ImportDialog({ onClose, onImported }: { onClose: () => void; onI
   return <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && onClose()}>
     <section className="import-dialog" role="dialog" aria-modal="true" aria-labelledby="import-title">
       <button className="icon-button dialog-close" onClick={onClose} aria-label="Закрыть"><X size={18}/></button>
-      <span className="eyebrow">Репозиторий процессов</span><h2 id="import-title">Импортировать BPMN</h2>
+      <span className="eyebrow">Репозиторий процессов</span><h2 id="import-title">{processId ? 'Заменить BPMN черновика' : 'Импортировать BPMN'}</h2>
       <p>Схема сначала проверяется и сохраняется только при отсутствии критических ошибок.</p>
       {!result && <form onSubmit={submit}>
         <label className="file-field"><FileUp size={21}/><span><strong>BPMN 2.0 XML</strong><small>{bpmnFile?.name ?? 'Обязательный файл .bpmn, до 2 МБ'}</small></span><input type="file" accept=".bpmn,application/xml,text/xml" required onChange={event => setBpmnFile(event.target.files?.[0])}/></label>

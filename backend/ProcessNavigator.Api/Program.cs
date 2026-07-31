@@ -14,11 +14,11 @@ app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "
 app.MapGet("/api/processes", async (ProcessCatalogService catalog, CancellationToken cancellationToken) =>
     Results.Ok(await catalog.ListAsync(cancellationToken)));
 
-app.MapGet("/api/processes/{processId}", async (string processId, BpmnProcessLoader loader, CancellationToken cancellationToken) =>
+app.MapGet("/api/processes/{processId}", async (string processId, bool? draft, ProcessCatalogService catalog, CancellationToken cancellationToken) =>
 {
     try
     {
-        return Results.Ok(await loader.LoadAsync(processId, cancellationToken));
+        return Results.Ok(await catalog.LoadAsync(processId, draft == true, cancellationToken));
     }
     catch (FileNotFoundException)
     {
@@ -29,6 +29,34 @@ app.MapGet("/api/processes/{processId}", async (string processId, BpmnProcessLoa
         return Results.Problem(exception.Message, statusCode: StatusCodes.Status422UnprocessableEntity,
             title: "BPMN validation failed");
     }
+});
+
+app.MapGet("/api/processes/{processId}/versions", async (string processId, ProcessCatalogService catalog, CancellationToken cancellationToken) =>
+{
+    try { return Results.Ok(await catalog.VersionsAsync(processId, cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
+});
+
+app.MapPost("/api/processes/{processId}/draft", async (string processId, ProcessCatalogService catalog, CancellationToken cancellationToken) =>
+{
+    try { return Results.Ok(await catalog.CreateDraftAsync(processId, cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
+    catch (ProcessConflictException exception) { return Results.Conflict(new { message = exception.Message }); }
+});
+
+app.MapPut("/api/processes/{processId}/draft", async (
+    string processId, IFormFile bpmnFile, IFormFile? contextFile, ProcessCatalogService catalog, CancellationToken cancellationToken) =>
+{
+    try { return Results.Ok(await catalog.ReplaceDraftAsync(processId, bpmnFile, contextFile, cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Draft for process '{processId}' was not found." }); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Draft validation failed"); }
+}).DisableAntiforgery();
+
+app.MapPost("/api/processes/{processId}/publish", async (string processId, ProcessCatalogService catalog, CancellationToken cancellationToken) =>
+{
+    try { return Results.Ok(await catalog.PublishDraftAsync(processId, cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Draft for process '{processId}' was not found." }); }
+    catch (IOException exception) { return Results.Conflict(new { message = exception.Message }); }
 });
 
 app.MapGet("/api/processes/{processId}/bpmn", (string processId, BpmnProcessLoader loader) =>

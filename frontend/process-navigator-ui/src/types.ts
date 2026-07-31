@@ -6,5 +6,6 @@ export type NodeType = 'startEvent' | 'endEvent' | 'task' | 'exclusiveGateway';
 export type ProcessNode = { id: string; type: NodeType; name: string; laneId: string; x: number; y: number; width: number; height: number; description?: string; responsible?: string; duration?: string; artifacts?: Artifact[]; actions?: ProcessAction[] };
 export type Edge = { id: string; sourceId: string; targetId: string; label?: string; points: Point[] };
 export type ProcessModel = { id: string; name: string; version: string; owner: string; status: string; lanes: Lane[]; nodes: ProcessNode[]; edges: Edge[] };
-export type ProcessSummary = { id: string; name: string; version: string; owner: string; status: string; nodeCount: number; laneCount: number };
+export type ProcessSummary = { id: string; name: string; version: string; owner: string; status: string; nodeCount: number; laneCount: number; hasDraft: boolean; draftVersion?: string };
 export type ProcessImportResult = { process: ProcessSummary; warnings: string[] };
+export type ProcessVersion = { version: string; status: 'Published' | 'Draft' | 'Archived'; createdAt: string };

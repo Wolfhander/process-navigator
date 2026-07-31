@@ -66,3 +66,11 @@ validation rules.
 - Server-side validation before a process is accepted into the catalog.
 - Clear import results with warnings for elements that lack contextual data.
 - Imported processes start as drafts and become immediately available for viewing.
+
+## Commit 0006 scope
+
+- Published and draft editions remain separate until publication.
+- New revisions are created from the current published BPMN and context.
+- Draft BPMN can be replaced and validated without affecting employees.
+- Publication archives the previous version and promotes the draft atomically.
+- Version history is available from the process toolbar.

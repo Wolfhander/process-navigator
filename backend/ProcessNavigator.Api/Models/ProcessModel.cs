@@ -45,8 +45,15 @@ public sealed record ProcessSummaryModel(
     string Owner,
     string Status,
     int NodeCount,
-    int LaneCount);
+    int LaneCount,
+    bool HasDraft = false,
+    string? DraftVersion = null);
 
 public sealed record ProcessImportResultModel(
     ProcessSummaryModel Process,
     IReadOnlyList<string> Warnings);
+
+public sealed record ProcessVersionModel(
+    string Version,
+    string Status,
+    DateTimeOffset CreatedAt);
