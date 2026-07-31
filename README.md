@@ -58,3 +58,11 @@ Open `http://localhost:5173`. The frontend proxies `/api` to the API at
 
 See [the BPMN import contract](docs/bpmn-import.md) for supported elements and
 validation rules.
+
+## Commit 0005 scope
+
+- Process catalog endpoint and process selector in the application header.
+- BPMN upload from the user interface with an optional context JSON file.
+- Server-side validation before a process is accepted into the catalog.
+- Clear import results with warnings for elements that lack contextual data.
+- Imported processes start as drafts and become immediately available for viewing.

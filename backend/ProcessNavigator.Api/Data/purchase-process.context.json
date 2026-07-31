@@ -1,6 +1,7 @@
 {
   "version": "0.1",
   "owner": "Руководитель службы закупок",
+  "status": "Published",
   "elements": {
     "StartEvent_Need": { "description": "Подразделению требуются материалы.", "responsible": "Инициатор", "artifacts": [], "actions": [] },
     "Task_CreateRequest": { "description": "Заполнить потребность, количество, срок и назначение материалов.", "responsible": "Инициатор", "duration": "15 минут", "artifacts": [{ "name": "Инструкция по оформлению заявки", "kind": "Инструкция", "version": "2.1" }], "actions": [{ "id": "create-erp-request", "label": "Создать заявку в ERP", "kind": "erp" }] },

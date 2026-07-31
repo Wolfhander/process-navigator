@@ -28,14 +28,46 @@ public sealed class BpmnProcessLoader(IWebHostEnvironment environment)
         ["exclusiveGateway"] = "exclusiveGateway"
     };
 
-    public string GetBpmnPath(string processId) => ResolvePath(processId, ".bpmn");
+    public string DataRoot => Path.Combine(environment.ContentRootPath, "Data");
+
+    public string GetBpmnPath(string processId)
+    {
+        if (!Directory.Exists(DataRoot)) return Path.Combine(DataRoot, "__missing__.bpmn");
+        foreach (var path in Directory.EnumerateFiles(DataRoot, "*.bpmn", SearchOption.TopDirectoryOnly))
+        {
+            try
+            {
+                var document = XDocument.Load(path, LoadOptions.None);
+                if (document.Root?.Elements(Bpmn + "process").Any(process =>
+                    string.Equals((string?)process.Attribute("id"), processId, StringComparison.Ordinal)) == true)
+                    return path;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Xml.XmlException)
+            {
+                // Invalid drafts are ignored by lookup and reported by explicit import validation.
+            }
+        }
+        return Path.Combine(DataRoot, "__missing__.bpmn");
+    }
 
     public async Task<ProcessModel> LoadAsync(string processId, CancellationToken cancellationToken = default)
     {
         var bpmnPath = GetBpmnPath(processId);
-        var contextPath = ResolvePath(processId, ".context.json");
+        var contextPath = Path.ChangeExtension(bpmnPath, ".context.json");
         if (!File.Exists(bpmnPath) || !File.Exists(contextPath))
             throw new FileNotFoundException($"Process '{processId}' was not found.");
+
+        return await LoadFilesAsync(bpmnPath, contextPath, processId, cancellationToken);
+    }
+
+    public async Task<ProcessModel> LoadFilesAsync(
+        string bpmnPath,
+        string contextPath,
+        string? expectedProcessId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(bpmnPath) || !File.Exists(contextPath))
+            throw new FileNotFoundException("BPMN or context file was not found.");
 
         await using var bpmnStream = File.OpenRead(bpmnPath);
         var document = await XDocument.LoadAsync(bpmnStream, LoadOptions.None, cancellationToken);
@@ -46,9 +78,15 @@ public sealed class BpmnProcessLoader(IWebHostEnvironment environment)
         var elementContexts = context.Elements
             ?? throw new InvalidDataException("Process context JSON has no elements map.");
 
-        var process = document.Root?.Elements(Bpmn + "process")
-            .SingleOrDefault(element => string.Equals((string?)element.Attribute("id"), processId, StringComparison.Ordinal))
-            ?? throw new InvalidDataException($"BPMN process '{processId}' is missing or duplicated.");
+        var processes = document.Root?.Elements(Bpmn + "process").ToArray() ?? [];
+        var matchingProcesses = expectedProcessId is null
+            ? processes
+            : processes.Where(element => string.Equals((string?)element.Attribute("id"), expectedProcessId, StringComparison.Ordinal)).ToArray();
+        var process = matchingProcesses.Length == 1 ? matchingProcesses[0] : null;
+        if (process is null)
+            throw new InvalidDataException(expectedProcessId is null
+                ? "A BPMN file must contain exactly one process."
+                : $"BPMN process '{expectedProcessId}' is missing or duplicated.");
 
         var shapes = document.Descendants(BpmnDi + "BPMNShape")
             .ToDictionary(element => RequiredAttribute(element, "bpmnElement"), StringComparer.Ordinal);
@@ -117,19 +155,13 @@ public sealed class BpmnProcessLoader(IWebHostEnvironment environment)
 
         return new ProcessModel(
             RequiredAttribute(process, "id"),
-            OptionalAttribute(process, "name") ?? processId,
+            OptionalAttribute(process, "name") ?? RequiredAttribute(process, "id"),
             context.Version,
             context.Owner,
+            context.Status ?? "Draft",
             lanes,
             nodes,
             edges);
-    }
-
-    private string ResolvePath(string processId, string suffix)
-    {
-        if (!string.Equals(processId, "purchase-materials", StringComparison.OrdinalIgnoreCase))
-            return Path.Combine(environment.ContentRootPath, "Data", $"__missing__{suffix}");
-        return Path.Combine(environment.ContentRootPath, "Data", $"purchase-process{suffix}");
     }
 
     private static Bounds RequiredBounds(IReadOnlyDictionary<string, XElement> shapes, string elementId)
@@ -160,7 +192,7 @@ public sealed class BpmnProcessLoader(IWebHostEnvironment environment)
     }
 
     private sealed record Bounds(double X, double Y, double Width, double Height);
-    private sealed record ProcessContextDocument(string Version, string Owner, Dictionary<string, ElementContext>? Elements);
+    private sealed record ProcessContextDocument(string Version, string Owner, string? Status, Dictionary<string, ElementContext>? Elements);
     private sealed record ElementContext(
         string? Description,
         string? Responsible,

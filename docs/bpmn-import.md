@@ -36,10 +36,17 @@ The API rejects a diagram with HTTP `422` when:
 
 ## API
 
+- `GET /api/processes` returns the available process catalog.
 - `GET /api/processes/{id}` parses BPMN and merges its element contexts.
 - `GET /api/processes/{id}/bpmn` returns the unmodified BPMN XML source.
+- `POST /api/processes/import` accepts multipart fields `bpmnFile` and optional
+  `contextFile`, validates them and stores a new draft process.
 - `GET /api/health` reports API availability.
 
-The next import increment will add intermediate events, parallel gateways,
-message flows, pools and upload/version-management endpoints.
+Uploaded BPMN files are limited to 2 MB. The process identifier must be unique
+and contain only Latin letters, digits, dots, underscores or hyphens. When the
+context file is omitted, Process Navigator creates an empty draft context and
+reports how many diagram elements still need descriptions or actions.
 
+The next import increment will add intermediate events, parallel gateways,
+message flows, pools and full version management.
