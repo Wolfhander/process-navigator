@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using System.Text.Json.Nodes;
+using System.Text;
 using ProcessNavigator.Api.Models;
 
 namespace ProcessNavigator.Api.Services;
@@ -108,6 +109,35 @@ public sealed partial class ProcessCatalogService(BpmnProcessLoader loader)
         if (!File.Exists(bpmnPath) || !File.Exists(contextPath))
             throw new FileNotFoundException($"Archived version '{version}' of process '{processId}' was not found.");
         return await loader.LoadFilesAsync(bpmnPath, contextPath, processId, cancellationToken);
+    }
+
+    public string GetBpmnSourcePath(string processId, bool draft)
+    {
+        if (!draft) return loader.GetBpmnPath(processId);
+        var path = DraftPaths(processId).Bpmn;
+        return File.Exists(path) ? path : Path.Combine(DraftRoot, "__missing__.bpmn");
+    }
+
+    public async Task<ProcessImportResultModel> SaveDraftXmlAsync(string processId, string xml, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(xml)) throw new InvalidDataException("BPMN XML is empty.");
+        if (Encoding.UTF8.GetByteCount(xml) > MaximumFileSize) throw new InvalidDataException("The BPMN file exceeds the 2 MB limit.");
+        var paths = DraftPaths(processId);
+        if (!File.Exists(paths.Bpmn) || !File.Exists(paths.Context))
+            throw new FileNotFoundException($"Draft for process '{processId}' was not found.");
+
+        var temporaryPath = Path.Combine(Path.GetTempPath(), $"process-navigator-{Guid.NewGuid():N}.bpmn");
+        try
+        {
+            await File.WriteAllTextAsync(temporaryPath, xml, new UTF8Encoding(false), cancellationToken);
+            var validated = await loader.LoadFilesAsync(temporaryPath, paths.Context, processId, cancellationToken);
+            File.Copy(temporaryPath, paths.Bpmn, overwrite: true);
+            return new ProcessImportResultModel(ToSummary(validated), ContextWarnings(validated));
+        }
+        finally
+        {
+            File.Delete(temporaryPath);
+        }
     }
 
     public async Task<ProcessSummaryModel> CreateDraftAsync(string processId, CancellationToken cancellationToken = default)

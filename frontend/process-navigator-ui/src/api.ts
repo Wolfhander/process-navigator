@@ -38,6 +38,20 @@ export async function replaceDraft(id: string, bpmnFile: File, contextFile?: Fil
   return response.json() as Promise<ProcessImportResult>;
 }
 
+export async function loadDraftBpmn(id: string): Promise<string> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(id)}/draft/bpmn`, { headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить BPMN черновика.'));
+  return response.text();
+}
+
+export async function saveDraftBpmn(id: string, xml: string): Promise<ProcessImportResult> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(id)}/draft/bpmn`, {
+    method: 'PUT', headers: { ...roleHeaders(), 'Content-Type': 'application/xml; charset=utf-8' }, body: xml
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить BPMN черновика.'));
+  return response.json() as Promise<ProcessImportResult>;
+}
+
 export async function publishDraft(id: string): Promise<ProcessSummary> {
   const response = await fetch(`/api/processes/${encodeURIComponent(id)}/publish`, { method: 'POST', headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось опубликовать редакцию.'));

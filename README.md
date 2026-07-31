@@ -92,3 +92,15 @@ validation rules.
 - Direct API calls cannot bypass the same permission checks used by the UI.
 
 See [access control](docs/access-control.md) for the current role matrix.
+
+## Commit 0009 scope
+
+- Embedded BPMN editor based on a locally bundled `bpmn-js` runtime.
+- Offline creation and editing of lanes, tasks, events, gateways and flows.
+- Direct label editing plus the standard BPMN palette and context pad.
+- Draft-only editing protected by the `process.diagram.edit` permission.
+- Server-side validation before the edited XML replaces the stored draft.
+- Lazy loading keeps the larger modelling runtime out of the normal viewer path.
+
+See [the embedded BPMN editor guide](docs/bpmn-editor.md) for the editing and
+publication workflow.

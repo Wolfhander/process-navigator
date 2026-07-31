@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text;
 using ProcessNavigator.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -83,6 +84,25 @@ app.MapGet("/api/processes/{processId}/bpmn", (string processId, BpmnProcessLoad
     if (!File.Exists(path))
         return Results.NotFound(new { message = $"Process '{processId}' was not found." });
     return Results.File(path, "application/xml; charset=utf-8", enableRangeProcessing: true);
+});
+
+app.MapGet("/api/processes/{processId}/draft/bpmn", (string processId, HttpContext context, ProcessCatalogService catalog, AccessControlService access) =>
+{
+    if (!CanOpenDraft(context, access)) return Forbidden("process.draft.view");
+    var path = catalog.GetBpmnSourcePath(processId, draft: true);
+    return File.Exists(path)
+        ? Results.File(path, "application/xml; charset=utf-8", enableRangeProcessing: true)
+        : Results.NotFound(new { message = $"Draft for process '{processId}' was not found." });
+});
+
+app.MapPut("/api/processes/{processId}/draft/bpmn", async (string processId, HttpContext context, ProcessCatalogService catalog, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessNavigator.Api.Models.ProcessPermissions.EditDiagram)) return Forbidden(ProcessNavigator.Api.Models.ProcessPermissions.EditDiagram);
+    using var reader = new StreamReader(context.Request.Body, Encoding.UTF8);
+    var xml = await reader.ReadToEndAsync(cancellationToken);
+    try { return Results.Ok(await catalog.SaveDraftXmlAsync(processId, xml, cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Draft for process '{processId}' was not found." }); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "BPMN validation failed"); }
 });
 
 app.MapPost("/api/processes/import", async (
