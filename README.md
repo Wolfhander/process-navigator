@@ -47,3 +47,14 @@ Open `http://localhost:5173`. The frontend proxies `/api` to the API at
 - Collapsed context rail when no BPMN element is selected.
 - Capability provider registry for ERP actions and process artifacts.
 - Progressive capability badges at detailed zoom levels.
+
+## Commit 0004 scope
+
+- Standard BPMN 2.0 XML as the source of process structure and geometry.
+- Server-side BPMN parser built on the .NET XML stack without external packages.
+- Separate context JSON keyed by immutable BPMN element IDs.
+- Validation of lanes, nodes, sequence flows, bounds and waypoints.
+- API endpoint for downloading the original BPMN source.
+
+See [the BPMN import contract](docs/bpmn-import.md) for supported elements and
+validation rules.

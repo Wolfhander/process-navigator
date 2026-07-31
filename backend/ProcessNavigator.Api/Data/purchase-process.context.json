@@ -1,0 +1,14 @@
+{
+  "version": "0.1",
+  "owner": "Руководитель службы закупок",
+  "elements": {
+    "StartEvent_Need": { "description": "Подразделению требуются материалы.", "responsible": "Инициатор", "artifacts": [], "actions": [] },
+    "Task_CreateRequest": { "description": "Заполнить потребность, количество, срок и назначение материалов.", "responsible": "Инициатор", "duration": "15 минут", "artifacts": [{ "name": "Инструкция по оформлению заявки", "kind": "Инструкция", "version": "2.1" }], "actions": [{ "id": "create-erp-request", "label": "Создать заявку в ERP", "kind": "erp" }] },
+    "Task_ReviewRequest": { "description": "Проверить полноту данных, остатки и возможность закупки.", "responsible": "Специалист по закупкам", "duration": "4 часа", "artifacts": [{ "name": "Чек-лист проверки заявки", "kind": "Чек-лист", "version": "1.4" }], "actions": [{ "id": "open-request", "label": "Открыть заявку", "kind": "erp" }] },
+    "Gateway_RequestValid": { "description": "Решение о передаче заявки на финансовое согласование.", "responsible": "Специалист по закупкам", "artifacts": [], "actions": [] },
+    "Task_ApproveBudget": { "description": "Проверить лимит и согласовать финансирование закупки.", "responsible": "Финансовый контролёр", "duration": "1 рабочий день", "artifacts": [{ "name": "Регламент согласования бюджета", "kind": "Регламент", "version": "3.0" }], "actions": [{ "id": "open-approval", "label": "Открыть согласование", "kind": "erp" }] },
+    "Task_PlaceOrder": { "description": "Выбрать поставщика и оформить заказ.", "responsible": "Специалист по закупкам", "duration": "1 рабочий день", "artifacts": [{ "name": "Шаблон запроса предложения", "kind": "Шаблон", "version": "5.2" }], "actions": [{ "id": "create-order", "label": "Создать заказ поставщику", "kind": "erp" }] },
+    "Task_ReceiveMaterials": { "description": "Проверить поставку и оформить поступление материалов.", "responsible": "Кладовщик", "duration": "30 минут", "artifacts": [{ "name": "Форма акта расхождений", "kind": "Шаблон", "version": "4.0" }], "actions": [{ "id": "create-receipt", "label": "Оформить поступление", "kind": "erp" }] },
+    "EndEvent_Received": { "description": "Материалы доступны на складе.", "responsible": "Кладовщик", "artifacts": [], "actions": [] }
+  }
+}
