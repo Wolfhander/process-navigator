@@ -14,12 +14,21 @@ builder.Services.AddSingleton<ArtifactRepositoryService>();
 builder.Services.AddSingleton<ProcessAssignmentService>();
 builder.Services.AddSingleton<ProcessExecutionService>();
 builder.Services.AddSingleton<ProcessCommandService>();
+builder.Services.AddSingleton<ProcessSearchService>();
 
 var app = builder.Build();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "ProcessNavigator.Api" }));
 
 app.MapGet("/api/session", (HttpContext context, AccessControlService access) => Results.Ok(access.Session(context)));
+
+app.MapGet("/api/search", async (string? q, HttpContext context, ProcessSearchService search,
+    AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
+    try { return Results.Ok(await search.SearchAsync(q ?? string.Empty, cancellationToken)); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Search validation failed"); }
+});
 
 app.MapGet("/api/admin/users", (HttpContext context, AccessControlService access) =>
     access.Has(context, ProcessPermissions.ManageUsers) ? Results.Ok(access.Directory()) : Forbidden(ProcessPermissions.ManageUsers));

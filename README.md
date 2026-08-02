@@ -192,3 +192,14 @@ current limits of the first analytics iteration.
 
 See [process commands and ERP adapter](docs/process-commands.md) for the command
 contract and integration boundary.
+
+## Commit 0018 scope
+
+- Global search across all published process models.
+- Results cover processes, BPMN elements, responsible roles, artifacts and actions.
+- Relevance ranking prefers exact and title matches over contextual matches.
+- Selecting a result switches processes when necessary and focuses the target BPMN element.
+- Search is available offline and protected by the normal process-view permission.
+- The duplicated command journal below the materials section was corrected.
+
+See [global process search](docs/global-search.md) for indexing scope and navigation behavior.

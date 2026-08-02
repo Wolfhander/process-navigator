@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Activity, BarChart3, BriefcaseBusiness, ChevronRight, FilePenLine, History, Home, Maximize2, Minus, PencilRuler, Plus, Rocket, RotateCcw, Search, Upload, UserCog, Users } from 'lucide-react';
 import { createDraft, loadArchivedProcess, loadAssignments, loadProcess, loadProcessCatalog, loadSession, publishDraft, setActiveUser, updateStep } from './api';
 import { ContextPanel } from './ContextPanel';
@@ -10,7 +10,8 @@ import { UserAdminDialog } from './UserAdminDialog';
 import { AssignmentDialog } from './AssignmentDialog';
 import { ExecutionDialog } from './ExecutionDialog';
 import { AnalyticsDialog } from './AnalyticsDialog';
-import type { ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, Session } from './types';
+import { SearchDialog } from './SearchDialog';
+import type { ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, SearchResult, Session } from './types';
 
 const BpmnEditor = lazy(() => import('./BpmnEditor').then(module => ({ default: module.BpmnEditor })));
 
@@ -30,6 +31,8 @@ export default function App() {
   const [personalMode, setPersonalMode] = useState(false);
   const [executionsOpen, setExecutionsOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [pendingSearchResult, setPendingSearchResult] = useState<SearchResult>();
   const [activeInstance, setActiveInstance] = useState<ProcessInstance>();
   const [draftView, setDraftView] = useState(false);
   const [archivedVersion, setArchivedVersion] = useState<string>();
@@ -83,6 +86,13 @@ export default function App() {
   useEffect(() => setPersonalMode(false), [processId, session?.currentUser.id]);
   useEffect(() => setActiveInstance(undefined), [processId]);
 
+  useEffect(() => {
+    if (!process || !pendingSearchResult || process.id !== pendingSearchResult.processId) return;
+    setDraftView(false); setArchivedVersion(undefined); setPersonalMode(false);
+    setSelected(pendingSearchResult.elementId ? process.nodes.find(node => node.id === pendingSearchResult.elementId) : undefined);
+    setPendingSearchResult(undefined);
+  }, [process, pendingSearchResult]);
+
   const notify = (text: string) => {
     setMessage(text);
     window.setTimeout(() => setMessage(''), 2800);
@@ -133,7 +143,7 @@ export default function App() {
   if (!process || !session) return <main className="state-page"><div className="loader"/><p>{catalog.length ? 'Загружаем рабочее пространство…' : 'Загружаем каталог процессов…'}</p></main>;
 
   return <div className="app-shell">
-    <header><div className="brand"><span className="brand-mark">PN</span><span>Process Navigator</span></div><nav aria-label="Навигация"><Home size={16}/><span>ООО «Демо»</span><ChevronRight size={15}/><span>Процессы</span><ChevronRight size={15}/><select className="process-select" value={processId} onChange={event => { setProcessId(event.target.value); setDraftView(false); setArchivedVersion(undefined); setEditorOpen(false); }} aria-label="Выбрать процесс">{catalog.map(item => <option key={item.id} value={item.id}>{item.name} · {item.hasDraft ? `черновик ${item.draftVersion}` : item.status}</option>)}</select></nav>{can('process.import') && <button className="header-action" onClick={() => setImportOpen(true)}><Upload size={17}/>Импорт</button>}{can('users.manage') && <button className="header-action" onClick={() => setUsersOpen(true)}><Users size={17}/>Пользователи</button>}<UserMenu session={session} onChange={changeUser}/><button className="search"><Search size={17}/>Поиск</button></header>
+    <header><div className="brand"><span className="brand-mark">PN</span><span>Process Navigator</span></div><nav aria-label="Навигация"><Home size={16}/><span>ООО «Демо»</span><ChevronRight size={15}/><span>Процессы</span><ChevronRight size={15}/><select className="process-select" value={processId} onChange={event => { setProcessId(event.target.value); setDraftView(false); setArchivedVersion(undefined); setEditorOpen(false); }} aria-label="Выбрать процесс">{catalog.map(item => <option key={item.id} value={item.id}>{item.name} · {item.hasDraft ? `черновик ${item.draftVersion}` : item.status}</option>)}</select></nav>{can('process.import') && <button className="header-action" onClick={() => setImportOpen(true)}><Upload size={17}/>Импорт</button>}{can('users.manage') && <button className="header-action" onClick={() => setUsersOpen(true)}><Users size={17}/>Пользователи</button>}<UserMenu session={session} onChange={changeUser}/><button className="search" onClick={() => setSearchOpen(true)}><Search size={17}/>Поиск</button></header>
     <div className="process-bar"><div><span className={`eyebrow ${draftView ? 'is-draft' : archivedVersion ? 'is-archive' : ''}`}>{archivedVersion ? 'Архивная версия' : draftView ? 'Черновик' : 'Действующая версия'} {process.version}</span><h1>{process.name}</h1></div><div className="revision-actions"><button className="revision-button" onClick={() => setVersionsOpen(true)}><History size={15}/>История</button>{!draftView && !archivedVersion && <button className={`revision-button${activeInstance ? ' is-primary' : ''}`} onClick={() => setExecutionsOpen(true)}><Activity size={15}/>{activeInstance ? activeInstance.name : 'Выполнения'}</button>}{can('analytics.view') && !draftView && !archivedVersion && <button className="revision-button" onClick={() => setAnalyticsOpen(true)}><BarChart3 size={15}/>Аналитика</button>}{assignments && <button className={`revision-button${personalMode ? ' is-primary' : ''}`} disabled={!personalLaneIds.length} title={personalLaneIds.length ? 'Подсветить мои дорожки и задачи' : 'Текущий пользователь не назначен на дорожки процесса'} onClick={() => { setPersonalMode(value => !value); setSelected(undefined); }}><BriefcaseBusiness size={15}/>Мои шаги ({personalLaneIds.length})</button>}{can('process.assignments.manage') && !archivedVersion && <button className="revision-button" onClick={() => setAssignmentsOpen(true)}><UserCog size={15}/>Ответственные</button>}{archivedVersion ? <button className="revision-button is-primary" onClick={() => setArchivedVersion(undefined)}><RotateCcw size={15}/>К действующей</button> : draftView ? <>{can('process.diagram.edit') && <><button className="revision-button" onClick={() => setEditorOpen(true)}><PencilRuler size={15}/>Редактировать</button><button className="revision-button" onClick={() => setImportOpen(true)} disabled={revisionBusy}><Upload size={15}/>Заменить BPMN</button></>}{can('process.publish') && <button className="revision-button is-primary" onClick={publishRevision} disabled={revisionBusy}><Rocket size={15}/>Опубликовать</button>}</> : catalog.find(item => item.id === processId)?.hasDraft ? (can('process.diagram.edit') || can('process.context.edit') || can('process.publish')) && <button className="revision-button" onClick={() => setDraftView(true)}><FilePenLine size={15}/>Открыть черновик</button> : can('process.draft.create') && <button className="revision-button" onClick={beginRevision} disabled={revisionBusy}><FilePenLine size={15}/>Новая редакция</button>}</div><div className="owner">Владелец процесса<strong>{process.owner}</strong></div><div className="view-controls"><button aria-label="Уменьшить" onClick={() => setZoomCommand(command => ({ id: command.id + 1, factor: 1 / 1.25 }))}><Minus size={18}/></button><button aria-label="Показать весь процесс" onClick={() => { setFitCommand(command => command + 1); setSelected(undefined); }}><Maximize2 size={18}/><span>Весь процесс</span></button><button aria-label="Увеличить" onClick={() => setZoomCommand(command => ({ id: command.id + 1, factor: 1.25 }))}><Plus size={18}/></button></div></div>
     {editorOpen ? <main className="workspace workspace--editor"><Suspense fallback={<div className="editor-loading"><div className="loader"/>Запускаем локальный BPMN-редактор…</div>}><BpmnEditor processId={processId} processName={process.name} onClose={() => setEditorOpen(false)} onSaved={() => { setEditorOpen(false); setReloadKey(value => value + 1); notify('BPMN черновика сохранена'); }}/></Suspense></main> : <main className="workspace"><ProcessCanvas key={`${process.id}:${process.version}:${draftView ? 'draft' : archivedVersion ?? 'published'}`} process={process} selectedId={selected?.id} onSelect={setSelected} zoomCommand={zoomCommand} fitCommand={fitCommand} personalMode={personalMode} personalLaneIds={personalLaneIds} stepStatuses={Object.fromEntries(activeInstance?.steps.map(step => [step.elementId, step.status]) ?? [])}/><ContextPanel processId={processId} node={selected} onClose={() => setSelected(undefined)} onAction={notify} onUpdated={updated => { setSelected(updated); setProcess(current => current ? { ...current, nodes: current.nodes.map(node => node.id === updated.id ? updated : node) } : current); notify('Контекст элемента сохранён'); }} canExecute={can('process.execute') && !archivedVersion} canEdit={draftView && can('process.context.edit')} assignedUsers={selected ? assignments?.lanes.find(lane => lane.laneId === selected.laneId)?.userIds.map(id => assignments.users.find(user => user.id === id)?.displayName).filter((name): name is string => !!name) : []} activeInstance={activeInstance} onStepStatus={changeStepStatus}/></main>}
     <footer><span>{editorOpen ? 'BPMN 2.0 · редактирование черновика' : 'BPMN 2.0 · только просмотр'}</span><span>{process.nodes.length} элементов · {process.lanes.length} роли</span><span>Canvas занимает {selected ? '76%' : '100%'} рабочего пространства</span></footer>
@@ -157,5 +167,10 @@ export default function App() {
       onClose={() => setAnalyticsOpen(false)}
       onSelectStep={elementId => { setAnalyticsOpen(false); setPersonalMode(false); setSelected(process.nodes.find(node => node.id === elementId)); }}
     />}
+    {searchOpen && <SearchDialog onClose={() => setSearchOpen(false)} onOpen={result => {
+      setSearchOpen(false); setDraftView(false); setArchivedVersion(undefined); setEditorOpen(false); setPendingSearchResult(result);
+      if (result.processId !== processId) setProcessId(result.processId);
+      else { setPersonalMode(false); setSelected(result.elementId ? process.nodes.find(node => node.id === result.elementId) : undefined); setPendingSearchResult(undefined); }
+    }}/>}
   </div>;
 }

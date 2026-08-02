@@ -1,4 +1,4 @@
-import type { CommandExecution, ElementContextUpdate, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, Session, UserDirectory, UserProfile, UserUpdate } from './types';
+import type { CommandExecution, ElementContextUpdate, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, SearchResult, Session, UserDirectory, UserProfile, UserUpdate } from './types';
 
 let activeUser = localStorage.getItem('pn.demoUser') ?? 'demo-employee';
 export function setActiveUser(userId: string) { activeUser = userId; localStorage.setItem('pn.demoUser', userId); }
@@ -28,6 +28,12 @@ export async function loadCommandHistory(processId: string, elementId: string): 
   const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/elements/${encodeURIComponent(elementId)}/commands`, { headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить журнал команд.'));
   return response.json() as Promise<CommandExecution[]>;
+}
+
+export async function searchProcesses(query: string, signal?: AbortSignal): Promise<SearchResult[]> {
+  const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal, headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось выполнить поиск.'));
+  return response.json() as Promise<SearchResult[]>;
 }
 
 export async function loadUserDirectory(): Promise<UserDirectory> {
