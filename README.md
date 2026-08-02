@@ -116,3 +116,15 @@ publication workflow.
 - The interface no longer requests web fonts and remains fully offline.
 
 See [context editing](docs/context-editor.md) for the data model and workflow.
+
+## Commit 0011 scope
+
+- Local repository for process instructions, templates and other files.
+- Immutable file versions with one current approved version per artifact.
+- Upload directly from the BPMN element context editor.
+- Stable `artifact:` references keep binary data outside BPMN and context JSON.
+- Download of a selected artifact version from the normal context panel.
+- 20 MB upload limit, safe repository paths and role-protected writes.
+
+See [the artifact repository guide](docs/artifact-repository.md) for storage and
+versioning rules.

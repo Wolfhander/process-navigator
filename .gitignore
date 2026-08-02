@@ -11,3 +11,4 @@
 *.tsbuildinfo
 frontend/process-navigator-ui/vite.config.js
 frontend/process-navigator-ui/vite.config.d.ts
+backend/ProcessNavigator.Api/Data/Artifacts/

@@ -1,4 +1,4 @@
-import type { ElementContextUpdate, ProcessImportResult, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, Session } from './types';
+import type { ElementContextUpdate, ProcessImportResult, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, Session } from './types';
 
 let activeRole = localStorage.getItem('pn.demoRole') ?? 'employee';
 export function setActiveRole(role: string) { activeRole = role; localStorage.setItem('pn.demoRole', role); }
@@ -58,6 +58,24 @@ export async function saveElementContext(processId: string, elementId: string, u
   });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить контекст элемента.'));
   return response.json() as Promise<ProcessNode>;
+}
+
+export async function loadArtifacts(): Promise<RepositoryArtifact[]> {
+  const response = await fetch('/api/artifacts', { headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить репозиторий документов.'));
+  return response.json() as Promise<RepositoryArtifact[]>;
+}
+
+export async function uploadArtifact(file: File, name: string, kind: string, version: string, artifactId?: string): Promise<RepositoryArtifactUpload> {
+  const body = new FormData(); body.append('file', file); body.append('name', name); body.append('kind', kind); body.append('version', version); if (artifactId) body.append('artifactId', artifactId);
+  const response = await fetch('/api/artifacts', { method: 'POST', headers: roleHeaders(), body });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить документ.'));
+  return response.json() as Promise<RepositoryArtifactUpload>;
+}
+
+export function artifactDownloadUrl(reference: string, version?: string) {
+  const id = reference.startsWith('artifact:') ? reference.slice('artifact:'.length) : '';
+  return id ? `/api/artifacts/${encodeURIComponent(id)}/content${version ? `?version=${encodeURIComponent(version)}` : ''}` : undefined;
 }
 
 export async function publishDraft(id: string): Promise<ProcessSummary> {

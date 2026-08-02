@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text;
 using ProcessNavigator.Api.Models;
 using ProcessNavigator.Api.Services;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -9,12 +10,42 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddSingleton<BpmnProcessLoader>();
 builder.Services.AddSingleton<ProcessCatalogService>();
 builder.Services.AddSingleton<AccessControlService>();
+builder.Services.AddSingleton<ArtifactRepositoryService>();
 
 var app = builder.Build();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "ProcessNavigator.Api" }));
 
 app.MapGet("/api/session", (HttpContext context, AccessControlService access) => Results.Ok(access.Session(context)));
+
+app.MapGet("/api/artifacts", async (HttpContext context, ArtifactRepositoryService artifacts, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
+    return Results.Ok(await artifacts.ListAsync(cancellationToken));
+});
+
+app.MapPost("/api/artifacts", async (IFormFile file, [FromForm] string name, [FromForm] string kind,
+    [FromForm] string version, [FromForm] string? artifactId,
+    HttpContext context, ArtifactRepositoryService artifacts, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.EditContext)) return Forbidden(ProcessPermissions.EditContext);
+    try { return Results.Ok(await artifacts.UploadAsync(file, name, kind, version, artifactId, cancellationToken)); }
+    catch (ArtifactConflictException exception) { return Results.Conflict(new { message = exception.Message }); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Artifact validation failed"); }
+}).DisableAntiforgery();
+
+app.MapGet("/api/artifacts/{artifactId}/content", async (string artifactId, string? version, HttpContext context,
+    ArtifactRepositoryService artifacts, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
+    try
+    {
+        var file = await artifacts.ResolveAsync(artifactId, version, cancellationToken);
+        return Results.File(file.Path, file.ContentType, file.FileName, enableRangeProcessing: true);
+    }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Artifact '{artifactId}' was not found." }); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Artifact validation failed"); }
+});
 
 app.MapGet("/api/processes", async (ProcessCatalogService catalog, CancellationToken cancellationToken) =>
     Results.Ok(await catalog.ListAsync(cancellationToken)));

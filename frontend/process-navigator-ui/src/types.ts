@@ -12,3 +12,6 @@ export type ProcessVersion = { version: string; status: 'Published' | 'Draft' | 
 export type UserProfile = { id: string; displayName: string; role: string; roleName: string; permissions: string[] };
 export type Session = { currentUser: UserProfile; availableUsers: UserProfile[] };
 export type ElementContextUpdate = Pick<ProcessNode, 'description' | 'responsible' | 'duration' | 'artifacts' | 'actions'>;
+export type RepositoryArtifactVersion = { version: string; fileName: string; contentType: string; size: number; uploadedAt: string; approved: boolean };
+export type RepositoryArtifact = { id: string; name: string; kind: string; currentVersion: string; versions: RepositoryArtifactVersion[] };
+export type RepositoryArtifactUpload = { id: string; name: string; kind: string; version: string; reference: string };
