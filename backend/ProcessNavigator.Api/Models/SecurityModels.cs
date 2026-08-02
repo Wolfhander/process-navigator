@@ -5,11 +5,26 @@ public sealed record UserProfileModel(
     string DisplayName,
     string Role,
     string RoleName,
-    IReadOnlyList<string> Permissions);
+    IReadOnlyList<string> Permissions,
+    bool IsActive = true);
 
 public sealed record SessionModel(
     UserProfileModel CurrentUser,
     IReadOnlyList<UserProfileModel> AvailableUsers);
+
+public sealed record RoleProfileModel(
+    string Id,
+    string Name,
+    IReadOnlyList<string> Permissions);
+
+public sealed record UserDirectoryModel(
+    IReadOnlyList<UserProfileModel> Users,
+    IReadOnlyList<RoleProfileModel> Roles);
+
+public sealed record UserUpdateModel(
+    string DisplayName,
+    string Role,
+    bool IsActive);
 
 public static class ProcessPermissions
 {

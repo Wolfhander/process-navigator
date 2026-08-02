@@ -128,3 +128,14 @@ See [context editing](docs/context-editor.md) for the data model and workflow.
 
 See [the artifact repository guide](docs/artifact-repository.md) for storage and
 versioning rules.
+
+## Commit 0012 scope
+
+- Persistent local user directory for the offline installation.
+- Administrator screen for assigning roles and enabling user accounts.
+- Role-derived permissions remain read-only and consistent across the UI and API.
+- Protection against disabling the current account or the last super-administrator.
+- User identity headers replace the earlier role-only demonstration switch.
+
+See [user administration](docs/user-administration.md) for the current offline
+identity model and the future 1C integration boundary.

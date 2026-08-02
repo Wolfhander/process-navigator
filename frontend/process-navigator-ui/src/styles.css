@@ -134,6 +134,16 @@ footer { display:flex; align-items:center; justify-content:space-between; paddin
 .import-message span { display:flex; flex-direction:column; gap:2px; }.import-message.is-error { background:#fff0eb; color:#8b3b24; }.import-message.is-warning { background:#fff7df; color:#7b601b; }
 .import-result { display:grid; justify-items:center; text-align:center; color:#31513f; }.import-result h3 { margin:10px 0 2px; font:600 23px 'Source Serif 4',Georgia,serif; }.import-result p { margin:4px 0 14px; color:var(--muted); font-size:11px; }.import-result .import-message { width:100%; justify-items:start; text-align:left; }
 .version-dialog { width:min(470px,100%); }
+.user-admin-dialog { width:min(820px,100%); }
+.user-admin-layout { display:grid; grid-template-columns:minmax(220px,.8fr) minmax(310px,1.2fr); gap:16px; min-height:390px; }
+.user-list { display:flex; flex-direction:column; gap:6px; max-height:470px; overflow:auto; padding-right:4px; }
+.user-list button { display:flex; align-items:center; gap:10px; width:100%; border:1px solid var(--line); border-radius:9px; padding:10px; background:white; color:var(--ink); text-align:left; cursor:pointer; }
+.user-list button:hover,.user-list button.is-selected { border-color:#6c806f; background:#f0f5ef; }
+.user-list button>span { display:flex; min-width:0; flex-direction:column; gap:2px; }.user-list strong { overflow:hidden; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }.user-list small { color:var(--muted); font-size:9px; }
+.user-edit-card { display:grid; align-content:start; gap:12px; padding:16px; border:1px solid var(--line); border-radius:11px; background:white; }
+.user-edit-title { display:flex; align-items:center; gap:9px; color:var(--green); }.user-edit-title>div { display:flex; flex-direction:column; gap:2px; }.user-edit-title strong { color:var(--ink); font-size:13px; }.user-edit-title small { color:var(--muted); font-size:9px; }
+.user-active-toggle { display:flex; align-items:flex-start; gap:9px; padding:10px; border:1px solid var(--line); border-radius:8px; color:var(--ink); cursor:pointer; }.user-active-toggle input { margin-top:2px; accent-color:var(--green); }.user-active-toggle span { display:flex; flex-direction:column; gap:3px; }.user-active-toggle strong { font-size:10px; }.user-active-toggle small { color:var(--muted); font-size:9px; }
+.permission-list { display:flex; flex-wrap:wrap; gap:5px; }.permission-list>strong { width:100%; color:#536158; font-size:9px; text-transform:uppercase; letter-spacing:.05em; }.permission-list span { padding:4px 6px; border-radius:5px; background:#edf1ec; color:#526158; font:600 8px monospace; }
 .version-loading { display:flex; align-items:center; justify-content:center; gap:9px; min-height:120px; color:var(--muted); font-size:12px; }
 .version-list { display:grid; gap:8px; margin-top:18px; }
 .version-row { width:100%; display:grid; grid-template-columns:22px 1fr auto; align-items:center; gap:10px; padding:13px 14px; border:1px solid var(--line); border-radius:9px; background:white; color:#526159; text-align:left; font-family:Manrope,sans-serif; cursor:pointer; }
@@ -148,3 +158,4 @@ footer { display:flex; align-items:center; justify-content:space-between; paddin
 @media(max-width:1100px){.revision-button{font-size:0;padding:0 9px}.revision-button svg{margin:0}.owner{display:none}}
 @media(max-width:900px){.context{flex-basis:290px;width:290px}.search,.header-action{font-size:0}.canvas-hint{display:none}.process-select{max-width:180px}}
 @media(max-width:680px){.app-shell{grid-template-rows:52px 72px minmax(0,1fr) 28px}.brand>span:last-child,nav span,.view-controls span{display:none}.process-bar{padding:10px 14px}.process-bar h1{font-size:20px}.workspace{position:relative}.context{position:absolute; right:0; top:0; bottom:0; width:min(88vw,340px); z-index:3; box-shadow:-10px 0 30px rgba(30,40,34,.12)}.context--empty{width:42px;flex-basis:42px;padding:8px 0}.lane-badge span{display:none}footer span:last-child{display:none}}
+@media(max-width:680px){.user-admin-layout{grid-template-columns:1fr}.user-list{max-height:180px}}

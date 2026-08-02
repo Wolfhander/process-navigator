@@ -1,13 +1,27 @@
-import type { ElementContextUpdate, ProcessImportResult, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, Session } from './types';
+import type { ElementContextUpdate, ProcessImportResult, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, Session, UserDirectory, UserProfile, UserUpdate } from './types';
 
-let activeRole = localStorage.getItem('pn.demoRole') ?? 'employee';
-export function setActiveRole(role: string) { activeRole = role; localStorage.setItem('pn.demoRole', role); }
-const roleHeaders = () => ({ 'X-Process-Navigator-Role': activeRole });
+let activeUser = localStorage.getItem('pn.demoUser') ?? 'demo-employee';
+export function setActiveUser(userId: string) { activeUser = userId; localStorage.setItem('pn.demoUser', userId); }
+const roleHeaders = () => ({ 'X-Process-Navigator-User': activeUser });
 
 export async function loadSession(signal?: AbortSignal): Promise<Session> {
   const response = await fetch('/api/session', { signal, headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить профиль пользователя.'));
   return response.json() as Promise<Session>;
+}
+
+export async function loadUserDirectory(): Promise<UserDirectory> {
+  const response = await fetch('/api/admin/users', { headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить список пользователей.'));
+  return response.json() as Promise<UserDirectory>;
+}
+
+export async function updateUser(userId: string, update: UserUpdate): Promise<UserProfile> {
+  const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+    method: 'PUT', headers: { ...roleHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(update)
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить пользователя.'));
+  return response.json() as Promise<UserProfile>;
 }
 
 async function errorMessage(response: Response, fallback: string) {

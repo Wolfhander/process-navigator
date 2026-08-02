@@ -18,6 +18,17 @@ app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "
 
 app.MapGet("/api/session", (HttpContext context, AccessControlService access) => Results.Ok(access.Session(context)));
 
+app.MapGet("/api/admin/users", (HttpContext context, AccessControlService access) =>
+    access.Has(context, ProcessPermissions.ManageUsers) ? Results.Ok(access.Directory()) : Forbidden(ProcessPermissions.ManageUsers));
+
+app.MapPut("/api/admin/users/{userId}", async (string userId, UserUpdateModel update, HttpContext context, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.ManageUsers)) return Forbidden(ProcessPermissions.ManageUsers);
+    try { return Results.Ok(await access.UpdateAsync(userId, update, access.CurrentUser(context).Id, cancellationToken)); }
+    catch (KeyNotFoundException) { return Results.NotFound(new { message = $"Пользователь '{userId}' не найден." }); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "User validation failed"); }
+});
+
 app.MapGet("/api/artifacts", async (HttpContext context, ArtifactRepositoryService artifacts, AccessControlService access, CancellationToken cancellationToken) =>
 {
     if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
