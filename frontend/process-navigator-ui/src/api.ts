@@ -1,4 +1,4 @@
-import type { CommandExecution, ElementContextUpdate, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, SearchResult, Session, UserDirectory, UserProfile, UserUpdate } from './types';
+import type { CommandExecution, ElementComment, ElementContextUpdate, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, SearchResult, Session, UserDirectory, UserProfile, UserUpdate } from './types';
 
 let activeUser = localStorage.getItem('pn.demoUser') ?? 'demo-employee';
 export function setActiveUser(userId: string) { activeUser = userId; localStorage.setItem('pn.demoUser', userId); }
@@ -34,6 +34,20 @@ export async function searchProcesses(query: string, signal?: AbortSignal): Prom
   const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal, headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось выполнить поиск.'));
   return response.json() as Promise<SearchResult[]>;
+}
+
+export async function loadElementComments(processId: string, elementId: string, signal?: AbortSignal): Promise<ElementComment[]> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/elements/${encodeURIComponent(elementId)}/comments`, { signal, headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить комментарии.'));
+  return response.json() as Promise<ElementComment[]>;
+}
+
+export async function addElementComment(processId: string, elementId: string, text: string): Promise<ElementComment> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/elements/${encodeURIComponent(elementId)}/comments`, {
+    method: 'POST', headers: { ...roleHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ text })
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить комментарий.'));
+  return response.json() as Promise<ElementComment>;
 }
 
 export async function loadUserDirectory(): Promise<UserDirectory> {

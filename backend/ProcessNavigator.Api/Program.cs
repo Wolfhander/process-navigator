@@ -15,6 +15,7 @@ builder.Services.AddSingleton<ProcessAssignmentService>();
 builder.Services.AddSingleton<ProcessExecutionService>();
 builder.Services.AddSingleton<ProcessCommandService>();
 builder.Services.AddSingleton<ProcessSearchService>();
+builder.Services.AddSingleton<ElementCommentService>();
 
 var app = builder.Build();
 
@@ -28,6 +29,25 @@ app.MapGet("/api/search", async (string? q, HttpContext context, ProcessSearchSe
     if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
     try { return Results.Ok(await search.SearchAsync(q ?? string.Empty, cancellationToken)); }
     catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Search validation failed"); }
+});
+
+app.MapGet("/api/processes/{processId}/elements/{elementId}/comments", async (string processId, string elementId,
+    HttpContext context, ElementCommentService comments, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
+    return Results.Ok(await comments.ListAsync(processId, elementId, cancellationToken));
+});
+
+app.MapPost("/api/processes/{processId}/elements/{elementId}/comments", async (string processId, string elementId,
+    CreateElementCommentModel request, HttpContext context, ProcessCatalogService catalog, ElementCommentService comments,
+    AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
+    try { return Results.Ok(await comments.AddAsync(await catalog.LoadAsync(processId, false, cancellationToken), elementId,
+        access.CurrentUser(context), request.Text, cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
+    catch (KeyNotFoundException) { return Results.NotFound(new { message = "Элемент процесса не найден." }); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Comment validation failed"); }
 });
 
 app.MapGet("/api/admin/users", (HttpContext context, AccessControlService access) =>

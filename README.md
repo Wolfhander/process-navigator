@@ -203,3 +203,13 @@ contract and integration boundary.
 - The duplicated command journal below the materials section was corrected.
 
 See [global process search](docs/global-search.md) for indexing scope and navigation behavior.
+
+## Commit 0019 scope
+
+- Persistent discussions attached to every BPMN element.
+- Comments record the authenticated author and server timestamp.
+- All process participants can read and add practical clarifications.
+- Discussion data remains outside BPMN XML and process-version files.
+- Comments survive closing the context panel and restarting the local server.
+
+See [element discussions](docs/element-discussions.md) for storage and usage rules.
