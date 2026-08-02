@@ -150,3 +150,12 @@ identity model and the future 1C integration boundary.
 
 See [process participants](docs/process-participants.md) for assignment rules and
 the planned mapping to 1C users and organizational units.
+
+## Commit 0014 scope
+
+- A prominent assigned-people section in every BPMN element context card.
+- Personal **Мои шаги** view based on the current user's lane assignments.
+- Personal lanes, tasks and connecting flows are emphasized without hiding the
+  complete BPMN process.
+- Switching process or user safely returns to the normal overview.
+- Users without assignments receive an explanatory disabled personal-view action.
