@@ -52,6 +52,14 @@ app.MapGet("/api/processes/{processId}/instances", async (string processId, Http
     return Results.Ok(await executions.ListAsync(processId, cancellationToken));
 });
 
+app.MapGet("/api/processes/{processId}/analytics", async (string processId, HttpContext context, ProcessCatalogService catalog,
+    ProcessExecutionService executions, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.ViewAnalytics)) return Forbidden(ProcessPermissions.ViewAnalytics);
+    try { return Results.Ok(await executions.AnalyticsAsync(await catalog.LoadAsync(processId, false, cancellationToken), cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
+});
+
 app.MapPost("/api/processes/{processId}/instances", async (string processId, StartProcessInstanceModel request, HttpContext context,
     ProcessCatalogService catalog, ProcessExecutionService executions, AccessControlService access, CancellationToken cancellationToken) =>
 {

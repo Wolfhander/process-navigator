@@ -167,3 +167,15 @@ the planned mapping to 1C users and organizational units.
 - Manual start and completion timestamps for every BPMN task.
 - Executor identity recorded for each changed step.
 - Live task-state coloring on the complete process canvas.
+
+## Commit 0016 scope
+
+- Execution analytics for every published process.
+- Counts of active and completed instances plus the average process cycle.
+- Average and maximum duration, active work and SLA violations per BPMN task.
+- Duration norms support minutes, hours and working days (eight hours).
+- Problem-first task list with direct navigation from analytics to the BPMN element.
+- Analytics API and interface are protected by the `analytics.view` permission.
+
+See [process analytics](docs/process-analytics.md) for calculation rules and the
+current limits of the first analytics iteration.
