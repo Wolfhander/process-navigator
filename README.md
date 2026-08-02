@@ -213,3 +213,13 @@ See [global process search](docs/global-search.md) for indexing scope and naviga
 - Comments survive closing the context panel and restarting the local server.
 
 See [element discussions](docs/element-discussions.md) for storage and usage rules.
+
+## Commit 0020 scope
+
+- Built-in help is available directly from the permanent application header.
+- Quick start explains the process-first interaction model without technical terms.
+- Role-aware guidance adapts to the current employee, manager, analyst, owner or administrator.
+- The searchable capability catalog separates implemented features from the next integration contour and planned work.
+- A maintained user manual and capability catalog are included with the source code.
+
+See the [user manual](docs/user-manual.md) and [capability catalog](docs/capability-catalog.md).
