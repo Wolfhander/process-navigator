@@ -1,4 +1,4 @@
-import type { ProcessImportResult, ProcessModel, ProcessSummary, ProcessVersion, Session } from './types';
+import type { ElementContextUpdate, ProcessImportResult, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, Session } from './types';
 
 let activeRole = localStorage.getItem('pn.demoRole') ?? 'employee';
 export function setActiveRole(role: string) { activeRole = role; localStorage.setItem('pn.demoRole', role); }
@@ -50,6 +50,14 @@ export async function saveDraftBpmn(id: string, xml: string): Promise<ProcessImp
   });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить BPMN черновика.'));
   return response.json() as Promise<ProcessImportResult>;
+}
+
+export async function saveElementContext(processId: string, elementId: string, update: ElementContextUpdate): Promise<ProcessNode> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/draft/elements/${encodeURIComponent(elementId)}/context`, {
+    method: 'PUT', headers: { ...roleHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(update)
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить контекст элемента.'));
+  return response.json() as Promise<ProcessNode>;
 }
 
 export async function publishDraft(id: string): Promise<ProcessSummary> {

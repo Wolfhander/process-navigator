@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text;
+using ProcessNavigator.Api.Models;
 using ProcessNavigator.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -103,6 +104,17 @@ app.MapPut("/api/processes/{processId}/draft/bpmn", async (string processId, Htt
     try { return Results.Ok(await catalog.SaveDraftXmlAsync(processId, xml, cancellationToken)); }
     catch (FileNotFoundException) { return Results.NotFound(new { message = $"Draft for process '{processId}' was not found." }); }
     catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "BPMN validation failed"); }
+});
+
+app.MapPut("/api/processes/{processId}/draft/elements/{elementId}/context", async (
+    string processId, string elementId, ElementContextUpdateModel update, HttpContext context,
+    ProcessCatalogService catalog, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.EditContext)) return Forbidden(ProcessPermissions.EditContext);
+    try { return Results.Ok(await catalog.SaveDraftElementContextAsync(processId, elementId, update, cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Draft for process '{processId}' was not found." }); }
+    catch (KeyNotFoundException) { return Results.NotFound(new { message = $"BPMN element '{elementId}' was not found in the draft." }); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Context validation failed"); }
 });
 
 app.MapPost("/api/processes/import", async (

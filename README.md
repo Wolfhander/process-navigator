@@ -104,3 +104,15 @@ See [access control](docs/access-control.md) for the current role matrix.
 
 See [the embedded BPMN editor guide](docs/bpmn-editor.md) for the editing and
 publication workflow.
+
+## Commit 0010 scope
+
+- In-place context editing for every BPMN element in a draft edition.
+- Descriptions, responsible roles and duration norms remain outside BPMN XML.
+- Versioned instructions, templates and other artifacts support a repository
+  reference for future 1C storage integration.
+- ERP, report, file and URL actions support stable IDs and configurable targets.
+- Server-side authorization, field limits and atomic context-file replacement.
+- The interface no longer requests web fonts and remains fully offline.
+
+See [context editing](docs/context-editor.md) for the data model and workflow.

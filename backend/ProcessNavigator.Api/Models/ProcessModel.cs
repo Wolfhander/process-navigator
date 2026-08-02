@@ -35,8 +35,15 @@ public sealed record EdgeModel(
     IReadOnlyList<PointModel> Points);
 
 public sealed record PointModel(double X, double Y);
-public sealed record ArtifactModel(string Name, string Kind, string Version);
-public sealed record ActionModel(string Id, string Label, string Kind);
+public sealed record ArtifactModel(string Name, string Kind, string Version, string? Reference = null);
+public sealed record ActionModel(string Id, string Label, string Kind, string? Target = null);
+
+public sealed record ElementContextUpdateModel(
+    string? Description,
+    string? Responsible,
+    string? Duration,
+    IReadOnlyList<ArtifactModel>? Artifacts,
+    IReadOnlyList<ActionModel>? Actions);
 
 public sealed record ProcessSummaryModel(
     string Id,

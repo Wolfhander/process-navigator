@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Text.Json.Nodes;
 using System.Text;
+using System.Text.Json;
 using ProcessNavigator.Api.Models;
 
 namespace ProcessNavigator.Api.Services;
@@ -8,6 +9,7 @@ namespace ProcessNavigator.Api.Services;
 public sealed partial class ProcessCatalogService(BpmnProcessLoader loader)
 {
     private const long MaximumFileSize = 2 * 1024 * 1024;
+    private readonly SemaphoreSlim contextWriteLock = new(1, 1);
     private string DraftRoot => Path.Combine(loader.DataRoot, "Drafts");
     private string VersionRoot => Path.Combine(loader.DataRoot, "Versions");
 
@@ -137,6 +139,50 @@ public sealed partial class ProcessCatalogService(BpmnProcessLoader loader)
         finally
         {
             File.Delete(temporaryPath);
+        }
+    }
+
+    public async Task<NodeModel> SaveDraftElementContextAsync(
+        string processId,
+        string elementId,
+        ElementContextUpdateModel update,
+        CancellationToken cancellationToken = default)
+    {
+        if (!SafeProcessId().IsMatch(processId)) throw new FileNotFoundException();
+        if (string.IsNullOrWhiteSpace(elementId) || elementId.Length > 200)
+            throw new InvalidDataException("The BPMN element ID is invalid.");
+        var normalized = NormalizeContext(update);
+        var paths = DraftPaths(processId);
+        if (!File.Exists(paths.Bpmn) || !File.Exists(paths.Context))
+            throw new FileNotFoundException($"Draft for process '{processId}' was not found.");
+
+        await contextWriteLock.WaitAsync(cancellationToken);
+        string? temporaryPath = null;
+        try
+        {
+            var current = await loader.LoadFilesAsync(paths.Bpmn, paths.Context, processId, cancellationToken);
+            if (current.Nodes.All(node => !string.Equals(node.Id, elementId, StringComparison.Ordinal)))
+                throw new KeyNotFoundException(elementId);
+
+            var root = JsonNode.Parse(await File.ReadAllTextAsync(paths.Context, cancellationToken))?.AsObject()
+                ?? throw new InvalidDataException("Process context JSON is empty.");
+            var elements = root["elements"] as JsonObject ?? new JsonObject();
+            root["elements"] = elements;
+            elements[elementId] = JsonSerializer.SerializeToNode(normalized,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+            temporaryPath = Path.Combine(Path.GetDirectoryName(paths.Context)!, $".{Guid.NewGuid():N}.context.tmp");
+            await File.WriteAllTextAsync(temporaryPath,
+                root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), new UTF8Encoding(false), cancellationToken);
+            var validated = await loader.LoadFilesAsync(paths.Bpmn, temporaryPath, processId, cancellationToken);
+            File.Move(temporaryPath, paths.Context, overwrite: true);
+            temporaryPath = null;
+            return validated.Nodes.Single(node => string.Equals(node.Id, elementId, StringComparison.Ordinal));
+        }
+        finally
+        {
+            if (temporaryPath is not null) File.Delete(temporaryPath);
+            contextWriteLock.Release();
         }
     }
 
@@ -298,6 +344,39 @@ public sealed partial class ProcessCatalogService(BpmnProcessLoader loader)
         var count = process.Nodes.Count(node => string.IsNullOrWhiteSpace(node.Description) &&
             string.IsNullOrWhiteSpace(node.Responsible) && (node.Actions?.Count ?? 0) == 0 && (node.Artifacts?.Count ?? 0) == 0);
         return count == 0 ? [] : [$"{count} element(s) have no Process Navigator context."];
+    }
+
+    private static ElementContextUpdateModel NormalizeContext(ElementContextUpdateModel update)
+    {
+        static string? Text(string? value, int maximum, string field)
+        {
+            var result = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+            if (result?.Length > maximum) throw new InvalidDataException($"{field} exceeds {maximum} characters.");
+            return result;
+        }
+
+        var artifacts = (update.Artifacts ?? []).Take(21).Select(item => new ArtifactModel(
+            Text(item.Name, 200, "Artifact name") ?? throw new InvalidDataException("Artifact name is required."),
+            Text(item.Kind, 80, "Artifact kind") ?? throw new InvalidDataException("Artifact kind is required."),
+            Text(item.Version, 40, "Artifact version") ?? throw new InvalidDataException("Artifact version is required."),
+            Text(item.Reference, 500, "Artifact reference"))).ToArray();
+        if (artifacts.Length > 20) throw new InvalidDataException("An element cannot contain more than 20 artifacts.");
+
+        var actions = (update.Actions ?? []).Take(21).Select(item => new ActionModel(
+            Text(item.Id, 100, "Action ID") ?? throw new InvalidDataException("Action ID is required."),
+            Text(item.Label, 200, "Action label") ?? throw new InvalidDataException("Action label is required."),
+            Text(item.Kind, 50, "Action kind") ?? throw new InvalidDataException("Action kind is required."),
+            Text(item.Target, 500, "Action target"))).ToArray();
+        if (actions.Length > 20) throw new InvalidDataException("An element cannot contain more than 20 actions.");
+        if (actions.Select(item => item.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != actions.Length)
+            throw new InvalidDataException("Action IDs must be unique within an element.");
+
+        return new ElementContextUpdateModel(
+            Text(update.Description, 4000, "Description"),
+            Text(update.Responsible, 200, "Responsible"),
+            Text(update.Duration, 100, "Duration"),
+            artifacts,
+            actions);
     }
 
     private static void ValidateUpload(IFormFile file, string extension, string label)

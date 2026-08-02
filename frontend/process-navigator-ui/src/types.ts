@@ -1,6 +1,6 @@
 export type Point = { x: number; y: number };
-export type Artifact = { name: string; kind: string; version: string };
-export type ProcessAction = { id: string; label: string; kind: string };
+export type Artifact = { name: string; kind: string; version: string; reference?: string };
+export type ProcessAction = { id: string; label: string; kind: string; target?: string };
 export type Lane = { id: string; name: string; y: number; height: number };
 export type NodeType = 'startEvent' | 'endEvent' | 'task' | 'exclusiveGateway';
 export type ProcessNode = { id: string; type: NodeType; name: string; laneId: string; x: number; y: number; width: number; height: number; description?: string; responsible?: string; duration?: string; artifacts?: Artifact[]; actions?: ProcessAction[] };
@@ -11,3 +11,4 @@ export type ProcessImportResult = { process: ProcessSummary; warnings: string[] 
 export type ProcessVersion = { version: string; status: 'Published' | 'Draft' | 'Archived'; createdAt: string };
 export type UserProfile = { id: string; displayName: string; role: string; roleName: string; permissions: string[] };
 export type Session = { currentUser: UserProfile; availableUsers: UserProfile[] };
+export type ElementContextUpdate = Pick<ProcessNode, 'description' | 'responsible' | 'duration' | 'artifacts' | 'actions'>;
