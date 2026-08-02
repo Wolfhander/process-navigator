@@ -14,3 +14,4 @@ frontend/process-navigator-ui/vite.config.d.ts
 backend/ProcessNavigator.Api/Data/Artifacts/
 backend/ProcessNavigator.Api/Data/Users/
 backend/ProcessNavigator.Api/Data/Assignments/
+backend/ProcessNavigator.Api/Data/Executions/

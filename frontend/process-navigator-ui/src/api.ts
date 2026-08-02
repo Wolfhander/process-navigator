@@ -1,4 +1,4 @@
-import type { ElementContextUpdate, ProcessAssignments, ProcessImportResult, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, Session, UserDirectory, UserProfile, UserUpdate } from './types';
+import type { ElementContextUpdate, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, Session, UserDirectory, UserProfile, UserUpdate } from './types';
 
 let activeUser = localStorage.getItem('pn.demoUser') ?? 'demo-employee';
 export function setActiveUser(userId: string) { activeUser = userId; localStorage.setItem('pn.demoUser', userId); }
@@ -37,6 +37,24 @@ export async function saveAssignments(processId: string, assignments: ProcessAss
   });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить ответственных.'));
   return response.json() as Promise<ProcessAssignments>;
+}
+
+export async function loadInstances(processId: string): Promise<ProcessInstance[]> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/instances`, { headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить выполнения процесса.'));
+  return response.json() as Promise<ProcessInstance[]>;
+}
+
+export async function startInstance(processId: string, name?: string): Promise<ProcessInstance> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/instances`, { method: 'POST', headers: { ...roleHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось запустить процесс.'));
+  return response.json() as Promise<ProcessInstance>;
+}
+
+export async function updateStep(processId: string, instanceId: string, elementId: string, status: 'InProgress' | 'Completed'): Promise<ProcessInstance> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/instances/${encodeURIComponent(instanceId)}/steps/${encodeURIComponent(elementId)}`, { method: 'PUT', headers: { ...roleHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось изменить состояние шага.'));
+  return response.json() as Promise<ProcessInstance>;
 }
 
 async function errorMessage(response: Response, fallback: string) {

@@ -11,6 +11,7 @@ type Props = {
   fitCommand?: number;
   personalMode?: boolean;
   personalLaneIds?: string[];
+  stepStatuses?: Record<string, string>;
 };
 
 const world = { x: 0, y: 0, width: 1660, height: 820 };
@@ -52,13 +53,13 @@ function zoomAt(camera: Camera, factor: number, anchor: Point): Camera {
   });
 }
 
-function NodeShape({ node, selected, related, personal, muted, showOverlays, onSelect }: { node: ProcessNode; selected: boolean; related: boolean; personal: boolean; muted: boolean; showOverlays: boolean; onSelect: () => void }) {
+function NodeShape({ node, selected, related, personal, muted, executionStatus, showOverlays, onSelect }: { node: ProcessNode; selected: boolean; related: boolean; personal: boolean; muted: boolean; executionStatus?: string; showOverlays: boolean; onSelect: () => void }) {
   const capabilities = resolveCapabilities(node);
   const actionCount = capabilities.filter(capability => capability.kind === 'action').length;
   const artifactCount = capabilities.filter(capability => capability.kind === 'artifact').length;
   const overlayLabel = [actionCount ? 'ERP' : '', artifactCount ? `${artifactCount} мат.` : ''].filter(Boolean).join(' · ');
   const common = {
-    className: `node node--${node.type}${selected ? ' is-selected' : ''}${related ? ' is-related' : ''}${personal ? ' is-personal' : ''}${muted ? ' is-muted' : ''}`,
+    className: `node node--${node.type}${selected ? ' is-selected' : ''}${related ? ' is-related' : ''}${personal ? ' is-personal' : ''}${executionStatus ? ` execution-${executionStatus.toLowerCase()}` : ''}${muted ? ' is-muted' : ''}`,
     onClick: onSelect,
     onPointerDown: (event: React.PointerEvent) => event.stopPropagation(),
     role: 'button',
@@ -71,7 +72,7 @@ function NodeShape({ node, selected, related, personal, muted, showOverlays, onS
   return <g {...common}><rect x={node.x} y={node.y} width={node.width} height={node.height} rx="12"/><foreignObject x={node.x + 10} y={node.y + 8} width={node.width - 20} height={node.height - 16}><div className="node-label">{node.name}</div></foreignObject>{showOverlays && overlayLabel && <g className="capability-overlay" transform={`translate(${node.x + node.width - 5} ${node.y - 5})`}><rect x={-72} y={-18} width={72} height={22} rx={11}/><text x={-36} y={-4} textAnchor="middle">{overlayLabel}</text></g>}</g>;
 }
 
-export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitCommand, personalMode = false, personalLaneIds = [] }: Props) {
+export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitCommand, personalMode = false, personalLaneIds = [], stepStatuses = {} }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{ pointerId: number; x: number; y: number; camera: Camera; moved: boolean } | undefined>(undefined);
   const suppressClickRef = useRef(false);
@@ -141,7 +142,7 @@ export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitC
       <rect width={world.width} height={world.height} fill="url(#grid)"/>
       <g className="lanes">{process.lanes.map(lane => <g key={lane.id} className={personalMode ? personalLanes.has(lane.id) ? 'is-personal' : 'is-muted' : ''}><rect className="lane" x="45" y={lane.y} width="1570" height={lane.height}/><foreignObject x="45" y={lane.y} width="55" height={lane.height}><div className="lane-title">{lane.name}</div></foreignObject></g>)}</g>
       <g className="edges">{process.edges.map(edge => { const label = labelPoint(edge); const focused = !!selectedId && focusedEdges.has(edge.id); const personal = personalMode && (personalNodes.has(edge.sourceId) || personalNodes.has(edge.targetId)); const muted = selectedId ? !focused : personalMode && !personal; return <g key={edge.id} className={`${focused ? 'is-focused' : personal ? 'is-personal' : ''}${muted ? ' is-muted' : ''}`}><path d={pathFor(edge)} markerEnd={focused || personal ? 'url(#arrow-focus)' : 'url(#arrow)'}/><text x={label.x} y={label.y} textAnchor="middle">{edge.label}</text></g>; })}</g>
-      <g className="nodes" onClick={event => event.stopPropagation()}>{process.nodes.map(node => <NodeShape key={node.id} node={node} selected={node.id === selectedId} related={!!selectedId && relatedNodes.has(node.id) && node.id !== selectedId} personal={personalMode && personalNodes.has(node.id)} muted={selectedId ? !relatedNodes.has(node.id) : personalMode && !personalNodes.has(node.id)} showOverlays={zoom >= 1.25 || node.id === selectedId} onSelect={() => onSelect(node)}/>)}</g>
+      <g className="nodes" onClick={event => event.stopPropagation()}>{process.nodes.map(node => <NodeShape key={node.id} node={node} selected={node.id === selectedId} related={!!selectedId && relatedNodes.has(node.id) && node.id !== selectedId} personal={personalMode && personalNodes.has(node.id)} muted={selectedId ? !relatedNodes.has(node.id) : personalMode && !personalNodes.has(node.id)} executionStatus={stepStatuses[node.id]} showOverlays={zoom >= 1.25 || node.id === selectedId} onSelect={() => onSelect(node)}/>)}</g>
     </svg>
     <div className="zoom-readout">{Math.round(zoom * 100)}%</div>
     {activeLane && (zoom >= 1.2 || selectedNode) && <div className="lane-badge"><span>{selectedNode ? 'Ответственная дорожка' : 'Текущая дорожка'}</span><strong>{activeLane.name}</strong></div>}

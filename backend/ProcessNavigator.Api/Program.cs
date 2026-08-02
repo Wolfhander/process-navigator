@@ -12,6 +12,7 @@ builder.Services.AddSingleton<ProcessCatalogService>();
 builder.Services.AddSingleton<AccessControlService>();
 builder.Services.AddSingleton<ArtifactRepositoryService>();
 builder.Services.AddSingleton<ProcessAssignmentService>();
+builder.Services.AddSingleton<ProcessExecutionService>();
 
 var app = builder.Build();
 
@@ -42,6 +43,31 @@ app.MapGet("/api/processes/{processId}/assignments", async (string processId, Ht
     if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
     try { return Results.Ok(await assignments.LoadAsync(await catalog.LoadAsync(processId, false, cancellationToken), access.Users(), cancellationToken)); }
     catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
+});
+
+app.MapGet("/api/processes/{processId}/instances", async (string processId, HttpContext context, ProcessExecutionService executions,
+    AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
+    return Results.Ok(await executions.ListAsync(processId, cancellationToken));
+});
+
+app.MapPost("/api/processes/{processId}/instances", async (string processId, StartProcessInstanceModel request, HttpContext context,
+    ProcessCatalogService catalog, ProcessExecutionService executions, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.Execute)) return Forbidden(ProcessPermissions.Execute);
+    try { return Results.Ok(await executions.StartAsync(await catalog.LoadAsync(processId, false, cancellationToken), access.CurrentUser(context).Id, request.Name, cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
+});
+
+app.MapPut("/api/processes/{processId}/instances/{instanceId}/steps/{elementId}", async (string processId, string instanceId,
+    string elementId, StepStatusUpdateModel request, HttpContext context, ProcessCatalogService catalog,
+    ProcessExecutionService executions, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.Execute)) return Forbidden(ProcessPermissions.Execute);
+    try { return Results.Ok(await executions.UpdateStepAsync(await catalog.LoadAsync(processId, false, cancellationToken), instanceId, elementId, request.Status, access.CurrentUser(context).Id, cancellationToken)); }
+    catch (KeyNotFoundException) { return Results.NotFound(new { message = "Экземпляр или шаг процесса не найден." }); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Execution validation failed"); }
 });
 
 app.MapPut("/api/processes/{processId}/assignments", async (string processId, ProcessAssignmentsUpdateModel update, HttpContext context,

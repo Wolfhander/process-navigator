@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { BookOpen, Box, Clock3, ExternalLink, PanelRight, Pencil, UserRound, X } from 'lucide-react';
+import { BookOpen, Box, CheckCircle2, Clock3, ExternalLink, PanelRight, Pencil, Play, UserRound, X } from 'lucide-react';
 import { resolveCapabilities } from './capabilities';
 import { artifactDownloadUrl } from './api';
 import { ContextEditor } from './ContextEditor';
-import type { ProcessNode } from './types';
+import type { ProcessInstance, ProcessNode } from './types';
 
 type ContextPanelProps = {
   processId: string;
@@ -14,9 +14,11 @@ type ContextPanelProps = {
   canExecute: boolean;
   canEdit: boolean;
   assignedUsers?: string[];
+  activeInstance?: ProcessInstance;
+  onStepStatus?: (status: 'InProgress' | 'Completed') => void;
 };
 
-export function ContextPanel({ processId, node, onClose, onAction, onUpdated, canExecute, canEdit, assignedUsers = [] }: ContextPanelProps) {
+export function ContextPanel({ processId, node, onClose, onAction, onUpdated, canExecute, canEdit, assignedUsers = [], activeInstance, onStepStatus }: ContextPanelProps) {
   const [editingId, setEditingId] = useState<string>();
   if (!node) return <aside className="context context--empty" title="Выберите элемент BPMN, чтобы открыть его контекст"><PanelRight size={18}/><span>Контекст</span></aside>;
   if (editingId === node.id) return <aside className="context context--editing"><ContextEditor processId={processId} node={node} onCancel={() => setEditingId(undefined)} onSaved={updated => { setEditingId(undefined); onUpdated(updated); }}/></aside>;
@@ -24,6 +26,7 @@ export function ContextPanel({ processId, node, onClose, onAction, onUpdated, ca
   const capabilities = resolveCapabilities(node);
   const actions = capabilities.filter(capability => capability.kind === 'action');
   const artifacts = capabilities.filter(capability => capability.kind === 'artifact');
+  const step = activeInstance?.steps.find(item => item.elementId === node.id);
   const openArtifact = (reference: string | undefined, version: string | undefined, label: string) => {
     const url = reference ? artifactDownloadUrl(reference, version) : undefined;
     if (url) window.open(url, '_blank', 'noopener'); else onAction(`Открыть материал: ${label}`);
@@ -34,6 +37,7 @@ export function ContextPanel({ processId, node, onClose, onAction, onUpdated, ca
     <span className="eyebrow">{node.type === 'task' ? 'Задача процесса' : 'Элемент BPMN'}</span><h2>{node.name}</h2><p className="description">{node.description}</p>
     <div className="facts"><div><UserRound size={17}/><span>Ответственная роль</span><strong>{node.responsible ?? 'Не назначена'}</strong></div>{node.duration && <div><Clock3 size={17}/><span>Норматив</span><strong>{node.duration}</strong></div>}</div>
     <section className="assigned-people"><h3>Назначенные сотрудники</h3>{assignedUsers.length ? assignedUsers.map(name => <div key={name}><span className="assigned-avatar"><UserRound size={14}/></span><strong>{name}</strong></div>) : <p className="permission-note">На ответственную дорожку пока никто не назначен.</p>}</section>
+    {step && <section className="step-execution"><h3>Текущее выполнение</h3><div className={`step-status is-${step.status.toLowerCase()}`}><Clock3 size={16}/><span><strong>{step.status === 'NotStarted' ? 'Не начато' : step.status === 'InProgress' ? 'В работе' : 'Завершено'}</strong><small>{step.startedAt ? `Начато ${new Date(step.startedAt).toLocaleString('ru-RU')}` : activeInstance?.name}</small></span></div>{canExecute && step.status === 'NotStarted' && <button onClick={() => onStepStatus?.('InProgress')}><Play size={16}/>Начать шаг</button>}{canExecute && step.status === 'InProgress' && <button onClick={() => onStepStatus?.('Completed')}><CheckCircle2 size={16}/>Завершить шаг</button>}</section>}
     {!!actions.length && <section><h3>Действия</h3>{!canExecute && <p className="permission-note">Действия доступны исполнителю или администратору.</p>}{actions.map(capability => <button className="primary-action" key={capability.id} disabled={!canExecute} onClick={() => onAction(capability.label)}><Box size={18}/><span><strong>{capability.label}</strong>{capability.action?.target && <small>{capability.action.target}</small>}</span><ExternalLink size={15}/></button>)}</section>}
     {!!artifacts.length && <section><h3>Материалы</h3>{artifacts.map(capability => <button className="artifact" key={capability.id} onClick={() => openArtifact(capability.artifact?.reference, capability.artifact?.version, capability.label)}><BookOpen size={18}/><span><strong>{capability.label}</strong><small>{capability.artifact?.kind} · версия {capability.artifact?.version}{capability.artifact?.reference?.startsWith('artifact:') ? ' · репозиторий' : capability.artifact?.reference ? ` · ${capability.artifact.reference}` : ''}</small></span></button>)}</section>}
   </aside>;

@@ -159,3 +159,11 @@ the planned mapping to 1C users and organizational units.
   complete BPMN process.
 - Switching process or user safely returns to the normal overview.
 - Users without assignments receive an explanatory disabled personal-view action.
+
+## Commit 0015 scope
+
+- Persistent process instances separated from the BPMN definition.
+- Start and reopen concrete executions of the published process version.
+- Manual start and completion timestamps for every BPMN task.
+- Executor identity recorded for each changed step.
+- Live task-state coloring on the complete process canvas.
