@@ -14,7 +14,9 @@ export function ArtifactUploadDialog({ onClose, onUploaded }: { onClose: () => v
 
   const choose = (selected?: File) => { setFile(selected); if (selected && !name) setName(selected.name.replace(/\.[^.]+$/, '')); };
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault(); if (!file) return; setBusy(true); setError('');
+    event.preventDefault();
+    event.stopPropagation();
+    if (!file) return; setBusy(true); setError('');
     try {
       const uploaded = await uploadArtifact(file, name, kind, version);
       onUploaded({ name: uploaded.name, kind: uploaded.kind, version: uploaded.version, reference: uploaded.reference });

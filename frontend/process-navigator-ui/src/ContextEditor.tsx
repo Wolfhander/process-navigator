@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, FileUp, Plus, Save, Trash2, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileUp, Plus, Save, Trash2, X } from 'lucide-react';
 import { saveElementContext } from './api';
 import { ArtifactUploadDialog } from './ArtifactUploadDialog';
 import type { Artifact, ProcessAction, ProcessNode } from './types';
@@ -17,6 +17,7 @@ export function ContextEditor({ processId, node, onCancel, onSaved }: {
   const [actions, setActions] = useState<ProcessAction[]>(node.actions ?? []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [artifactNotice, setArtifactNotice] = useState('');
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const patchArtifact = (index: number, patch: Partial<Artifact>) =>
@@ -25,7 +26,9 @@ export function ContextEditor({ processId, node, onCancel, onSaved }: {
     setActions(items => items.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
 
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault(); setBusy(true); setError('');
+    event.preventDefault();
+    if (event.target !== event.currentTarget) return;
+    setBusy(true); setError(''); setArtifactNotice('');
     try {
       onSaved(await saveElementContext(processId, node.id, { description, responsible, duration, artifacts, actions }));
     } catch (reason) {
@@ -41,6 +44,7 @@ export function ContextEditor({ processId, node, onCancel, onSaved }: {
     <section className="context-collection"><div className="collection-heading"><h3>Материалы и шаблоны</h3><div><button type="button" onClick={() => setArtifacts(items => [...items, { name: '', kind: 'Инструкция', version: '1.0', reference: '' }])}><Plus size={15}/>Ссылка</button><button type="button" onClick={() => setUploadOpen(true)}><FileUp size={15}/>Файл</button></div></div>
       {artifacts.map((artifact, index) => <div className="collection-card" key={`artifact-${index}`}><button type="button" className="remove-row" onClick={() => setArtifacts(items => items.filter((_, itemIndex) => itemIndex !== index))} aria-label="Удалить материал"><Trash2 size={15}/></button><label>Название<input required value={artifact.name} maxLength={200} onChange={event => patchArtifact(index, { name: event.target.value })}/></label><div className="context-form-grid"><label>Тип<input required value={artifact.kind} maxLength={80} onChange={event => patchArtifact(index, { kind: event.target.value })}/></label><label>Версия<input required value={artifact.version} maxLength={40} onChange={event => patchArtifact(index, { version: event.target.value })}/></label></div><label>Файл, ссылка или идентификатор<input value={artifact.reference ?? ''} maxLength={500} onChange={event => patchArtifact(index, { reference: event.target.value })} placeholder="Например, ХранилищеЗначения:..."/></label></div>)}
       {!artifacts.length && <p className="empty-collection">К элементу пока не прикреплены материалы.</p>}
+      {artifactNotice && <div className="context-save-notice"><CheckCircle2 size={17}/><span>{artifactNotice}</span></div>}
     </section>
 
     <section className="context-collection"><div className="collection-heading"><h3>Действия ERP</h3><button type="button" onClick={() => setActions(items => [...items, { id: `action-${crypto.randomUUID().slice(0, 8)}`, label: '', kind: 'erp', target: '' }])}><Plus size={15}/>Добавить</button></div>
@@ -53,7 +57,11 @@ export function ContextEditor({ processId, node, onCancel, onSaved }: {
     {uploadOpen && (
       <ArtifactUploadDialog
       onClose={() => setUploadOpen(false)}
-      onUploaded={artifact => { setArtifacts(items => [...items, artifact]); setUploadOpen(false); }}/>
+      onUploaded={artifact => {
+        setArtifacts(items => [...items, artifact]);
+        setArtifactNotice('Файл загружен в репозиторий и добавлен в список. Нажмите «Сохранить контекст».');
+        setUploadOpen(false);
+      }}/>
     )}
   </form>;
 }
