@@ -13,6 +13,7 @@ builder.Services.AddSingleton<AccessControlService>();
 builder.Services.AddSingleton<ArtifactRepositoryService>();
 builder.Services.AddSingleton<ProcessAssignmentService>();
 builder.Services.AddSingleton<ProcessExecutionService>();
+builder.Services.AddSingleton<ProcessCommandService>();
 
 var app = builder.Build();
 
@@ -58,6 +59,25 @@ app.MapGet("/api/processes/{processId}/analytics", async (string processId, Http
     if (!access.Has(context, ProcessPermissions.ViewAnalytics)) return Forbidden(ProcessPermissions.ViewAnalytics);
     try { return Results.Ok(await executions.AnalyticsAsync(await catalog.LoadAsync(processId, false, cancellationToken), cancellationToken)); }
     catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
+});
+
+app.MapGet("/api/processes/{processId}/elements/{elementId}/commands", async (string processId, string elementId,
+    HttpContext context, ProcessCommandService commands, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
+    return Results.Ok(await commands.ListAsync(processId, elementId, cancellationToken));
+});
+
+app.MapPost("/api/processes/{processId}/elements/{elementId}/actions/{actionId}/execute", async (string processId,
+    string elementId, string actionId, ExecuteCommandRequestModel request, HttpContext context, ProcessCatalogService catalog,
+    ProcessCommandService commands, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.Execute)) return Forbidden(ProcessPermissions.Execute);
+    try { return Results.Ok(await commands.ExecuteAsync(await catalog.LoadAsync(processId, false, cancellationToken), elementId,
+        actionId, request.InstanceId, access.CurrentUser(context).Id, cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
+    catch (KeyNotFoundException) { return Results.NotFound(new { message = "Элемент или команда процесса не найдены." }); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Command validation failed"); }
 });
 
 app.MapPost("/api/processes/{processId}/instances", async (string processId, StartProcessInstanceModel request, HttpContext context,

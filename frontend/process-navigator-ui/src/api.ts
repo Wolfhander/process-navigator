@@ -1,4 +1,4 @@
-import type { ElementContextUpdate, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, Session, UserDirectory, UserProfile, UserUpdate } from './types';
+import type { CommandExecution, ElementContextUpdate, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, Session, UserDirectory, UserProfile, UserUpdate } from './types';
 
 let activeUser = localStorage.getItem('pn.demoUser') ?? 'demo-employee';
 export function setActiveUser(userId: string) { activeUser = userId; localStorage.setItem('pn.demoUser', userId); }
@@ -14,6 +14,20 @@ export async function loadProcessAnalytics(processId: string): Promise<ProcessAn
   const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/analytics`, { headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить аналитику процесса.'));
   return response.json() as Promise<ProcessAnalytics>;
+}
+
+export async function executeProcessAction(processId: string, elementId: string, actionId: string, instanceId?: string): Promise<CommandExecution> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/elements/${encodeURIComponent(elementId)}/actions/${encodeURIComponent(actionId)}/execute`, {
+    method: 'POST', headers: { ...roleHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ instanceId })
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось выполнить команду процесса.'));
+  return response.json() as Promise<CommandExecution>;
+}
+
+export async function loadCommandHistory(processId: string, elementId: string): Promise<CommandExecution[]> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/elements/${encodeURIComponent(elementId)}/commands`, { headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить журнал команд.'));
+  return response.json() as Promise<CommandExecution[]>;
 }
 
 export async function loadUserDirectory(): Promise<UserDirectory> {

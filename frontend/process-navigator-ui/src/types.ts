@@ -20,6 +20,7 @@ export type StepExecution = { elementId: string; status: 'NotStarted' | 'InProgr
 export type ProcessInstance = { id: string; processId: string; processVersion: string; name: string; status: 'Active' | 'Completed'; startedAt: string; completedAt?: string; startedBy: string; steps: StepExecution[] };
 export type StepAnalytics = { elementId: string; name: string; laneName: string; norm?: string; completedCount: number; inProgressCount: number; averageMinutes?: number; maximumMinutes?: number; overdueCount: number };
 export type ProcessAnalytics = { processId: string; totalInstances: number; activeInstances: number; completedInstances: number; averageCycleMinutes?: number; steps: StepAnalytics[] };
+export type CommandExecution = { id: string; processId: string; elementId: string; actionId: string; actionLabel: string; kind: string; target?: string; instanceId?: string; userId: string; status: string; message: string; externalReference?: string; executedAt: string };
 export type ElementContextUpdate = Pick<ProcessNode, 'description' | 'responsible' | 'duration' | 'artifacts' | 'actions'>;
 export type RepositoryArtifactVersion = { version: string; fileName: string; contentType: string; size: number; uploadedAt: string; approved: boolean };
 export type RepositoryArtifact = { id: string; name: string; kind: string; currentVersion: string; versions: RepositoryArtifactVersion[] };

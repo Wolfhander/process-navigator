@@ -179,3 +179,16 @@ the planned mapping to 1C users and organizational units.
 
 See [process analytics](docs/process-analytics.md) for calculation rules and the
 current limits of the first analytics iteration.
+
+## Commit 0017 scope
+
+- Server-side execution of configured BPMN element actions.
+- A stable adapter boundary for ERP, report, URL and file commands.
+- Validation against the published process prevents arbitrary client commands.
+- Every invocation records its process, element, user, instance and timestamp.
+- The element context displays the adapter result and recent command journal.
+- The included offline 1C adapter returns a traceable demonstration reference;
+  it can later be replaced by the real 1C integration implementation.
+
+See [process commands and ERP adapter](docs/process-commands.md) for the command
+contract and integration boundary.
