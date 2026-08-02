@@ -20,9 +20,9 @@ public sealed class AccessControlService
             Role("employee", "Исполнитель", ProcessPermissions.View, ProcessPermissions.Execute),
             Role("manager", "Руководитель", ProcessPermissions.View, ProcessPermissions.Execute, ProcessPermissions.ViewAnalytics),
             Role("analyst", "Аналитик", ProcessPermissions.View, ProcessPermissions.Import, ProcessPermissions.CreateDraft, ProcessPermissions.EditDiagram, ProcessPermissions.EditContext),
-            Role("owner", "Владелец процесса", ProcessPermissions.View, ProcessPermissions.CreateDraft, ProcessPermissions.EditContext, ProcessPermissions.Publish, ProcessPermissions.ViewAnalytics),
-            Role("administrator", "Администратор", ProcessPermissions.View, ProcessPermissions.Execute, ProcessPermissions.Import, ProcessPermissions.CreateDraft, ProcessPermissions.EditDiagram, ProcessPermissions.EditContext, ProcessPermissions.Publish, ProcessPermissions.ViewAnalytics, ProcessPermissions.ManageUsers),
-            Role("superadministrator", "СуперАдминистратор", ProcessPermissions.View, ProcessPermissions.Execute, ProcessPermissions.Import, ProcessPermissions.CreateDraft, ProcessPermissions.EditDiagram, ProcessPermissions.EditContext, ProcessPermissions.Publish, ProcessPermissions.ViewAnalytics, ProcessPermissions.ManageUsers, ProcessPermissions.ManageSystem)
+            Role("owner", "Владелец процесса", ProcessPermissions.View, ProcessPermissions.CreateDraft, ProcessPermissions.EditContext, ProcessPermissions.ManageAssignments, ProcessPermissions.Publish, ProcessPermissions.ViewAnalytics),
+            Role("administrator", "Администратор", ProcessPermissions.View, ProcessPermissions.Execute, ProcessPermissions.Import, ProcessPermissions.CreateDraft, ProcessPermissions.EditDiagram, ProcessPermissions.EditContext, ProcessPermissions.ManageAssignments, ProcessPermissions.Publish, ProcessPermissions.ViewAnalytics, ProcessPermissions.ManageUsers),
+            Role("superadministrator", "СуперАдминистратор", ProcessPermissions.View, ProcessPermissions.Execute, ProcessPermissions.Import, ProcessPermissions.CreateDraft, ProcessPermissions.EditDiagram, ProcessPermissions.EditContext, ProcessPermissions.ManageAssignments, ProcessPermissions.Publish, ProcessPermissions.ViewAnalytics, ProcessPermissions.ManageUsers, ProcessPermissions.ManageSystem)
         }.ToDictionary(role => role.Id, StringComparer.OrdinalIgnoreCase);
         storagePath = Path.Combine(environment.ContentRootPath, "Data", "Users", "users.json");
         users = LoadUsers();
@@ -53,6 +53,11 @@ public sealed class AccessControlService
     public UserDirectoryModel Directory()
     {
         lock (sync) return new(users.Values.OrderBy(user => user.DisplayName).ToArray(), roles.Values.ToArray());
+    }
+
+    public IReadOnlyList<UserProfileModel> Users()
+    {
+        lock (sync) return users.Values.ToArray();
     }
 
     public async Task<UserProfileModel> UpdateAsync(string id, UserUpdateModel update, string currentUserId, CancellationToken cancellationToken)

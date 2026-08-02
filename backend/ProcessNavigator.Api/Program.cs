@@ -11,6 +11,7 @@ builder.Services.AddSingleton<BpmnProcessLoader>();
 builder.Services.AddSingleton<ProcessCatalogService>();
 builder.Services.AddSingleton<AccessControlService>();
 builder.Services.AddSingleton<ArtifactRepositoryService>();
+builder.Services.AddSingleton<ProcessAssignmentService>();
 
 var app = builder.Build();
 
@@ -33,6 +34,23 @@ app.MapGet("/api/artifacts", async (HttpContext context, ArtifactRepositoryServi
 {
     if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
     return Results.Ok(await artifacts.ListAsync(cancellationToken));
+});
+
+app.MapGet("/api/processes/{processId}/assignments", async (string processId, HttpContext context, ProcessCatalogService catalog,
+    ProcessAssignmentService assignments, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
+    try { return Results.Ok(await assignments.LoadAsync(await catalog.LoadAsync(processId, false, cancellationToken), access.Users(), cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
+});
+
+app.MapPut("/api/processes/{processId}/assignments", async (string processId, ProcessAssignmentsUpdateModel update, HttpContext context,
+    ProcessCatalogService catalog, ProcessAssignmentService assignments, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.ManageAssignments)) return Forbidden(ProcessPermissions.ManageAssignments);
+    try { return Results.Ok(await assignments.SaveAsync(await catalog.LoadAsync(processId, false, cancellationToken), update, access.Users(), cancellationToken)); }
+    catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Assignment validation failed"); }
 });
 
 app.MapPost("/api/artifacts", async (IFormFile file, [FromForm] string name, [FromForm] string kind,

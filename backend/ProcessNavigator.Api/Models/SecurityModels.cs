@@ -34,6 +34,7 @@ public static class ProcessPermissions
     public const string CreateDraft = "process.draft.create";
     public const string EditDiagram = "process.diagram.edit";
     public const string EditContext = "process.context.edit";
+    public const string ManageAssignments = "process.assignments.manage";
     public const string Publish = "process.publish";
     public const string ViewAnalytics = "analytics.view";
     public const string ManageUsers = "users.manage";

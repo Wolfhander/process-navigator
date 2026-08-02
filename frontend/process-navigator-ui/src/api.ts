@@ -1,4 +1,4 @@
-import type { ElementContextUpdate, ProcessImportResult, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, Session, UserDirectory, UserProfile, UserUpdate } from './types';
+import type { ElementContextUpdate, ProcessAssignments, ProcessImportResult, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, Session, UserDirectory, UserProfile, UserUpdate } from './types';
 
 let activeUser = localStorage.getItem('pn.demoUser') ?? 'demo-employee';
 export function setActiveUser(userId: string) { activeUser = userId; localStorage.setItem('pn.demoUser', userId); }
@@ -22,6 +22,21 @@ export async function updateUser(userId: string, update: UserUpdate): Promise<Us
   });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить пользователя.'));
   return response.json() as Promise<UserProfile>;
+}
+
+export async function loadAssignments(processId: string): Promise<ProcessAssignments> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/assignments`, { headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить ответственных по дорожкам.'));
+  return response.json() as Promise<ProcessAssignments>;
+}
+
+export async function saveAssignments(processId: string, assignments: ProcessAssignments): Promise<ProcessAssignments> {
+  const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/assignments`, {
+    method: 'PUT', headers: { ...roleHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lanes: assignments.lanes.map(lane => ({ laneId: lane.laneId, userIds: lane.userIds })) })
+  });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить ответственных.'));
+  return response.json() as Promise<ProcessAssignments>;
 }
 
 async function errorMessage(response: Response, fallback: string) {

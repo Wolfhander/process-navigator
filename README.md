@@ -139,3 +139,14 @@ versioning rules.
 
 See [user administration](docs/user-administration.md) for the current offline
 identity model and the future 1C integration boundary.
+
+## Commit 0013 scope
+
+- Real employees can be assigned to stable BPMN lane roles per process.
+- Process owners, administrators and super-administrators manage assignments.
+- The selected task context shows both its process role and assigned people.
+- Assignments remain outside BPMN XML and survive diagram context changes.
+- Server validation rejects unknown lanes, disabled users and unauthorized writes.
+
+See [process participants](docs/process-participants.md) for assignment rules and
+the planned mapping to 1C users and organizational units.
