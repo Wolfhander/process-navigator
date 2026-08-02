@@ -1,4 +1,4 @@
-import type { CommandExecution, ElementComment, ElementContextUpdate, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, SearchResult, Session, UserDirectory, UserProfile, UserUpdate } from './types';
+import type { CommandExecution, ElementComment, ElementContextUpdate, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, SearchResult, Session, UserDirectory, UserNotification, UserProfile, UserUpdate } from './types';
 
 let activeUser = localStorage.getItem('pn.demoUser') ?? 'demo-employee';
 export function setActiveUser(userId: string) { activeUser = userId; localStorage.setItem('pn.demoUser', userId); }
@@ -48,6 +48,23 @@ export async function addElementComment(processId: string, elementId: string, te
   });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить комментарий.'));
   return response.json() as Promise<ElementComment>;
+}
+
+export async function loadNotifications(signal?: AbortSignal): Promise<UserNotification[]> {
+  const response = await fetch('/api/notifications', { signal, headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить уведомления.'));
+  return response.json() as Promise<UserNotification[]>;
+}
+
+export async function markNotificationRead(notificationId: string): Promise<UserNotification> {
+  const response = await fetch(`/api/notifications/${encodeURIComponent(notificationId)}/read`, { method: 'PUT', headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось отметить уведомление прочитанным.'));
+  return response.json() as Promise<UserNotification>;
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const response = await fetch('/api/notifications/read-all', { method: 'PUT', headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось отметить уведомления прочитанными.'));
 }
 
 export async function loadUserDirectory(): Promise<UserDirectory> {

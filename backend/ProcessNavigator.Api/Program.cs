@@ -16,12 +16,30 @@ builder.Services.AddSingleton<ProcessExecutionService>();
 builder.Services.AddSingleton<ProcessCommandService>();
 builder.Services.AddSingleton<ProcessSearchService>();
 builder.Services.AddSingleton<ElementCommentService>();
+builder.Services.AddSingleton<NotificationService>();
 
 var app = builder.Build();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "ProcessNavigator.Api" }));
 
 app.MapGet("/api/session", (HttpContext context, AccessControlService access) => Results.Ok(access.Session(context)));
+
+app.MapGet("/api/notifications", async (HttpContext context, NotificationService notifications,
+    AccessControlService access, CancellationToken cancellationToken) =>
+    Results.Ok(await notifications.ListAsync(access.CurrentUser(context).Id, cancellationToken)));
+
+app.MapPut("/api/notifications/{notificationId}/read", async (string notificationId, HttpContext context,
+    NotificationService notifications, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    try { return Results.Ok(await notifications.MarkReadAsync(notificationId, access.CurrentUser(context).Id, cancellationToken)); }
+    catch (KeyNotFoundException) { return Results.NotFound(); }
+});
+
+app.MapPut("/api/notifications/read-all", async (HttpContext context, NotificationService notifications,
+    AccessControlService access, CancellationToken cancellationToken) =>
+{
+    await notifications.MarkAllReadAsync(access.CurrentUser(context).Id, cancellationToken); return Results.NoContent();
+});
 
 app.MapGet("/api/search", async (string? q, HttpContext context, ProcessSearchService search,
     AccessControlService access, CancellationToken cancellationToken) =>
@@ -44,7 +62,7 @@ app.MapPost("/api/processes/{processId}/elements/{elementId}/comments", async (s
 {
     if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
     try { return Results.Ok(await comments.AddAsync(await catalog.LoadAsync(processId, false, cancellationToken), elementId,
-        access.CurrentUser(context), request.Text, cancellationToken)); }
+        access.CurrentUser(context), request.Text, access.Users(), cancellationToken)); }
     catch (FileNotFoundException) { return Results.NotFound(new { message = $"Process '{processId}' was not found." }); }
     catch (KeyNotFoundException) { return Results.NotFound(new { message = "Элемент процесса не найден." }); }
     catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Comment validation failed"); }

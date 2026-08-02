@@ -3,7 +3,7 @@ using ProcessNavigator.Api.Models;
 
 namespace ProcessNavigator.Api.Services;
 
-public sealed class ElementCommentService(IWebHostEnvironment environment)
+public sealed class ElementCommentService(IWebHostEnvironment environment, NotificationService notifications)
 {
     private readonly string root = Path.Combine(environment.ContentRootPath, "Data", "Comments");
     private readonly SemaphoreSlim writeLock = new(1, 1);
@@ -13,9 +13,9 @@ public sealed class ElementCommentService(IWebHostEnvironment environment)
             .OrderBy(item => item.CreatedAt).ToArray();
 
     public async Task<ElementCommentModel> AddAsync(ProcessModel process, string elementId, UserProfileModel user,
-        string text, CancellationToken cancellationToken)
+        string text, IReadOnlyList<UserProfileModel> users, CancellationToken cancellationToken)
     {
-        if (!process.Nodes.Any(node => node.Id == elementId)) throw new KeyNotFoundException("Element");
+        var element = process.Nodes.FirstOrDefault(node => node.Id == elementId) ?? throw new KeyNotFoundException("Element");
         text = text.Trim();
         if (text.Length is < 1 or > 2000) throw new InvalidDataException("Комментарий должен содержать от 1 до 2000 символов.");
         var comment = new ElementCommentModel(Guid.NewGuid().ToString("N"), process.Id, elementId, user.Id,
@@ -29,6 +29,7 @@ public sealed class ElementCommentService(IWebHostEnvironment environment)
             File.Move(temporary, path, true);
         }
         finally { writeLock.Release(); }
+        await notifications.CreateMentionsAsync(process, element, user, text, users, cancellationToken);
         return comment;
     }
 

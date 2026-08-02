@@ -223,3 +223,12 @@ See [element discussions](docs/element-discussions.md) for storage and usage rul
 - A maintained user manual and capability catalog are included with the source code.
 
 See the [user manual](docs/user-manual.md) and [capability catalog](docs/capability-catalog.md).
+
+## Commit 0021 scope
+
+- Persistent personal notifications stored on the local Process Navigator server.
+- Full-name mentions in element discussions create notifications for the addressed users.
+- The discussion editor offers one-click mention insertion for active users.
+- The header bell shows the unread counter and opens the personal notification center.
+- Opening a notification marks it as read and navigates to the related BPMN element.
+- Users can mark the entire notification inbox as read.

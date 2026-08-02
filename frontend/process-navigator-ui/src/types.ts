@@ -23,6 +23,7 @@ export type ProcessAnalytics = { processId: string; totalInstances: number; acti
 export type CommandExecution = { id: string; processId: string; elementId: string; actionId: string; actionLabel: string; kind: string; target?: string; instanceId?: string; userId: string; status: string; message: string; externalReference?: string; executedAt: string };
 export type SearchResult = { kind: 'process' | 'element' | 'artifact' | 'action'; label: string; description?: string; processId: string; processName: string; elementId?: string; elementName?: string; score: number };
 export type ElementComment = { id: string; processId: string; elementId: string; userId: string; authorName: string; text: string; createdAt: string };
+export type UserNotification = { id: string; userId: string; kind: string; title: string; message: string; processId: string; processName: string; elementId?: string; elementName?: string; sourceUserId?: string; createdAt: string; readAt?: string };
 export type ElementContextUpdate = Pick<ProcessNode, 'description' | 'responsible' | 'duration' | 'artifacts' | 'actions'>;
 export type RepositoryArtifactVersion = { version: string; fileName: string; contentType: string; size: number; uploadedAt: string; approved: boolean };
 export type RepositoryArtifact = { id: string; name: string; kind: string; currentVersion: string; versions: RepositoryArtifactVersion[] };
