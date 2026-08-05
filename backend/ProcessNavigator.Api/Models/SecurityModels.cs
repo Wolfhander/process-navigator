@@ -6,7 +6,10 @@ public sealed record UserProfileModel(
     string Role,
     string RoleName,
     IReadOnlyList<string> Permissions,
-    bool IsActive = true);
+    bool IsActive = true,
+    string? LegalEntityId = null,
+    string? UnitId = null,
+    string? Position = null);
 
 public sealed record SessionModel(
     UserProfileModel CurrentUser,
@@ -24,7 +27,10 @@ public sealed record UserDirectoryModel(
 public sealed record UserUpdateModel(
     string DisplayName,
     string Role,
-    bool IsActive);
+    bool IsActive,
+    string? LegalEntityId = null,
+    string? UnitId = null,
+    string? Position = null);
 
 public static class ProcessPermissions
 {

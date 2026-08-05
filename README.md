@@ -279,3 +279,11 @@ See the [1C integration contract](docs/one-c-integration.md) for the server-side
 - The canvas resolves the current unit name from the organization directory, so renaming a unit updates every linked lane.
 - Server validation prevents links to missing units or legal entities outside the cross-company process.
 - Existing textual department values remain supported for backward compatibility.
+
+## Commit 0029 scope
+
+- User profiles can store a legal entity, organization unit and job position.
+- Administrators maintain personnel affiliation in the existing user-management dialog.
+- Assignment screens rank employees from the lane's organization unit first and mark exact matches as recommended.
+- Server validation prevents assigning a user to a missing unit or to a unit of another legal entity.
+- Existing local user files are migrated safely because the new profile fields are optional.

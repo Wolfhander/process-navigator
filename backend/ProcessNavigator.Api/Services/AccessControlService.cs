@@ -71,7 +71,8 @@ public sealed class AccessControlService
             if (id == currentUserId && !update.IsActive) throw new InvalidDataException("Нельзя отключить текущего пользователя.");
             if (existing.Role == "superadministrator" && (update.Role != "superadministrator" || !update.IsActive) && users.Values.Count(user => user.Role == "superadministrator" && user.IsActive) == 1)
                 throw new InvalidDataException("В системе должен остаться хотя бы один активный СуперАдминистратор.");
-            updated = new UserProfileModel(id, update.DisplayName.Trim(), role.Id, role.Name, role.Permissions, update.IsActive);
+            updated = new UserProfileModel(id, update.DisplayName.Trim(), role.Id, role.Name, role.Permissions, update.IsActive,
+                Clean(update.LegalEntityId), Clean(update.UnitId), Clean(update.Position));
             users[id] = updated;
         }
         await SaveAsync(cancellationToken);
@@ -84,20 +85,25 @@ public sealed class AccessControlService
         {
             var stored = JsonSerializer.Deserialize<List<StoredUser>>(File.ReadAllText(storagePath), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (stored is not null)
-                return stored.Where(user => roles.ContainsKey(user.Role)).Select(user => User(user.Id, user.DisplayName, user.Role, user.IsActive)).ToDictionary(user => user.Id, StringComparer.OrdinalIgnoreCase);
+                return stored.Where(user => roles.ContainsKey(user.Role)).Select(user => User(user.Id, user.DisplayName, user.Role, user.IsActive, user.LegalEntityId, user.UnitId, user.Position)).ToDictionary(user => user.Id, StringComparer.OrdinalIgnoreCase);
         }
         return new[]
         {
-            User("demo-employee", "Мария Соколова", "employee"), User("demo-manager", "Алексей Воронцов", "manager"),
-            User("demo-analyst", "Елена Морозова", "analyst"), User("demo-owner", "Игорь Белов", "owner"),
-            User("demo-administrator", "Ольга Крылова", "administrator"), User("demo-superadministrator", "Сергей Лавров", "superadministrator")
+            User("demo-employee", "Мария Соколова", "employee", true, "plant", "1.2", "Специалист по закупкам"),
+            User("demo-manager", "Алексей Воронцов", "manager", true, "plant", "1", "Руководитель комплекса"),
+            User("demo-analyst", "Елена Морозова", "analyst", true, "communications", "2.9.1", "Бизнес-аналитик"),
+            User("demo-owner", "Игорь Белов", "owner", true, "plant", "1.6", "Владелец процесса"),
+            User("demo-administrator", "Ольга Крылова", "administrator", true, "plant", "1.5", "Администратор системы"),
+            User("demo-superadministrator", "Сергей Лавров", "superadministrator", true, "corporation", "0.1", "Системный архитектор")
         }.ToDictionary(user => user.Id, StringComparer.OrdinalIgnoreCase);
     }
 
-    private UserProfileModel User(string id, string displayName, string roleId, bool active = true)
+    private UserProfileModel User(string id, string displayName, string roleId, bool active = true,
+        string? legalEntityId = null, string? unitId = null, string? position = null)
     {
-        var role = roles[roleId]; return new(id, displayName, role.Id, role.Name, role.Permissions, active);
+        var role = roles[roleId]; return new(id, displayName, role.Id, role.Name, role.Permissions, active, legalEntityId, unitId, position);
     }
+    private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private static RoleProfileModel Role(string id, string name, params string[] permissions) => new(id, name, permissions);
     private async Task SaveAsync(CancellationToken cancellationToken)
     {
@@ -105,7 +111,7 @@ public sealed class AccessControlService
         try
         {
             StoredUser[] snapshot;
-            lock (sync) snapshot = users.Values.Select(user => new StoredUser(user.Id, user.DisplayName, user.Role, user.IsActive)).ToArray();
+            lock (sync) snapshot = users.Values.Select(user => new StoredUser(user.Id, user.DisplayName, user.Role, user.IsActive, user.LegalEntityId, user.UnitId, user.Position)).ToArray();
             System.IO.Directory.CreateDirectory(Path.GetDirectoryName(storagePath)!);
             var temporary = storagePath + ".tmp";
             await File.WriteAllTextAsync(temporary, JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true }), cancellationToken);
@@ -113,5 +119,6 @@ public sealed class AccessControlService
         }
         finally { saveLock.Release(); }
     }
-    private sealed record StoredUser(string Id, string DisplayName, string Role, bool IsActive);
+    private sealed record StoredUser(string Id, string DisplayName, string Role, bool IsActive,
+        string? LegalEntityId = null, string? UnitId = null, string? Position = null);
 }

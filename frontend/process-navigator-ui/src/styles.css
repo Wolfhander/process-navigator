@@ -145,6 +145,8 @@ footer { display:flex; align-items:center; justify-content:space-between; paddin
 .version-dialog { width:min(470px,100%); }
 .user-admin-dialog { width:min(820px,100%); }
 .user-admin-layout { display:grid; grid-template-columns:minmax(220px,.8fr) minmax(310px,1.2fr); gap:16px; min-height:390px; }
+.user-organization-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.assignment-users label.is-recommended { border-radius:7px; background:#edf5ec; }.assignment-users label strong { display:flex; align-items:center; gap:5px; }.assignment-users label em { padding:2px 5px; border-radius:8px; background:#dcecdc; color:#27603d; font-size:6px; font-style:normal; text-transform:uppercase; }
 .user-list { display:flex; flex-direction:column; gap:6px; max-height:470px; overflow:auto; padding-right:4px; }
 .user-list button { display:flex; align-items:center; gap:10px; width:100%; border:1px solid var(--line); border-radius:9px; padding:10px; background:white; color:var(--ink); text-align:left; cursor:pointer; }
 .user-list button:hover,.user-list button.is-selected { border-color:#6c806f; background:#f0f5ef; }

@@ -110,10 +110,22 @@ app.MapPost("/api/processes/{processId}/elements/{elementId}/comments", async (s
 app.MapGet("/api/admin/users", (HttpContext context, AccessControlService access) =>
     access.Has(context, ProcessPermissions.ManageUsers) ? Results.Ok(access.Directory()) : Forbidden(ProcessPermissions.ManageUsers));
 
-app.MapPut("/api/admin/users/{userId}", async (string userId, UserUpdateModel update, HttpContext context, AccessControlService access, CancellationToken cancellationToken) =>
+app.MapPut("/api/admin/users/{userId}", async (string userId, UserUpdateModel update, HttpContext context,
+    AccessControlService access, OrganizationMapService organization, CancellationToken cancellationToken) =>
 {
     if (!access.Has(context, ProcessPermissions.ManageUsers)) return Forbidden(ProcessPermissions.ManageUsers);
-    try { return Results.Ok(await access.UpdateAsync(userId, update, access.CurrentUser(context).Id, cancellationToken)); }
+    try
+    {
+        if (update.LegalEntityId is not null || update.UnitId is not null)
+        {
+            var map = await organization.LoadAsync(cancellationToken);
+            var entity = map.LegalEntities.FirstOrDefault(item => item.Id.Equals(update.LegalEntityId, StringComparison.OrdinalIgnoreCase))
+                ?? throw new InvalidDataException("Выбранное юридическое лицо не найдено.");
+            if (update.UnitId is not null && !(entity.Units ?? []).Any(item => item.Id.Equals(update.UnitId, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidDataException("Выбранное подразделение не принадлежит юридическому лицу.");
+        }
+        return Results.Ok(await access.UpdateAsync(userId, update, access.CurrentUser(context).Id, cancellationToken));
+    }
     catch (KeyNotFoundException) { return Results.NotFound(new { message = $"Пользователь '{userId}' не найден." }); }
     catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "User validation failed"); }
 });
