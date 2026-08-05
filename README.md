@@ -271,3 +271,11 @@ See the [1C integration contract](docs/one-c-integration.md) for the server-side
 - Every unit keeps its parent, full name, short name and manager position.
 - The enterprise map offers a collapsible organization-tree view with search by unit or manager.
 - Server validation rejects missing parents, duplicate identifiers and circular reporting lines.
+
+## Commit 0028 scope
+
+- BPMN lanes can be assigned to concrete organization units instead of free-text department names.
+- Superadministrators configure the legal entity and organization unit for every process lane.
+- The canvas resolves the current unit name from the organization directory, so renaming a unit updates every linked lane.
+- Server validation prevents links to missing units or legal entities outside the cross-company process.
+- Existing textual department values remain supported for backward compatibility.

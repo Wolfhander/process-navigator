@@ -64,6 +64,12 @@ public sealed class OrganizationMapService(IWebHostEnvironment environment)
                 throw new InvalidDataException($"Cross-company process '{process.ProcessId}' has invalid participants.");
             if (process.LaneOrganizations.Any(item => !process.LegalEntityIds.Contains(item.LegalEntityId, StringComparer.OrdinalIgnoreCase)))
                 throw new InvalidDataException($"Cross-company process '{process.ProcessId}' maps a lane to a non-participating legal entity.");
+            foreach (var mapping in process.LaneOrganizations.Where(item => item.UnitId is not null))
+            {
+                var entity = model.LegalEntities.First(item => item.Id.Equals(mapping.LegalEntityId, StringComparison.OrdinalIgnoreCase));
+                if (!(entity.Units ?? []).Any(unit => unit.Id.Equals(mapping.UnitId, StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidDataException($"Lane '{mapping.LaneId}' references an unknown organization unit.");
+            }
             if (process.LaneOrganizations.Select(item => item.LaneId).Distinct(StringComparer.Ordinal).Count() != process.LaneOrganizations.Count)
                 throw new InvalidDataException($"Cross-company process '{process.ProcessId}' maps the same lane more than once.");
         }

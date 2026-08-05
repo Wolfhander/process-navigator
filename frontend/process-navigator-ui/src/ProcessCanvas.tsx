@@ -91,7 +91,8 @@ export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitC
   const laneOrganization = (laneId: string) => {
     const mapping = crossCompanyProcess?.laneOrganizations.find(item => item.laneId === laneId);
     const entity = organization?.legalEntities.find(item => item.id === mapping?.legalEntityId);
-    return mapping && entity ? { entityName: entity.name, department: mapping.department } : undefined;
+    const unit = entity?.units?.find(item => item.id === mapping?.unitId);
+    return mapping && entity ? { entityName: entity.name, department: unit?.name ?? mapping.department } : undefined;
   };
   process.edges.forEach(edge => {
     if (focusedEdges.has(edge.id)) {

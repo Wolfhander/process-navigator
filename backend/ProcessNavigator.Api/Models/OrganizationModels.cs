@@ -37,4 +37,5 @@ public sealed record CrossCompanyProcessModel(
 public sealed record LaneOrganizationModel(
     string LaneId,
     string LegalEntityId,
-    string Department);
+    string Department,
+    string? UnitId = null);
