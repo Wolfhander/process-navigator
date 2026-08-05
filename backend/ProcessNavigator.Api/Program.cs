@@ -18,6 +18,7 @@ builder.Services.AddSingleton<ProcessCommandService>();
 builder.Services.AddSingleton<ProcessSearchService>();
 builder.Services.AddSingleton<ElementCommentService>();
 builder.Services.AddSingleton<NotificationService>();
+builder.Services.AddSingleton<OrganizationMapService>();
 builder.Services.AddDataProtection();
 builder.Services.AddHttpClient("one-c", client => client.DefaultRequestHeaders.UserAgent.ParseAdd("ProcessNavigator/0.1"));
 builder.Services.AddSingleton<OneCIntegrationService>();
@@ -25,6 +26,14 @@ builder.Services.AddSingleton<OneCIntegrationService>();
 var app = builder.Build();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "ProcessNavigator.Api" }));
+
+app.MapGet("/api/organization", async (HttpContext context, OrganizationMapService organization,
+    AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.View)) return Forbidden(ProcessPermissions.View);
+    try { return Results.Ok(await organization.LoadAsync(cancellationToken)); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Organization map validation failed"); }
+});
 
 app.MapGet("/api/session", (HttpContext context, AccessControlService access) => Results.Ok(access.Session(context)));
 

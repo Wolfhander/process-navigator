@@ -1,0 +1,43 @@
+{
+  "id": "demo-group",
+  "name": "Группа «Демо»",
+  "description": "Единое процессное пространство нескольких юридических лиц.",
+  "legalEntities": [
+    {
+      "id": "corporation",
+      "name": "АО «Корпорация»",
+      "description": "Головная организация: корпоративное управление, собственники и общегрупповые функции.",
+      "directions": [
+        { "id": "governance", "name": "Корпоративное управление", "description": "Стратегия, собственники и контроль группы.", "icon": "landmark", "processIds": [] },
+        { "id": "finance", "name": "Финансы", "description": "Консолидированное бюджетирование и контроль.", "icon": "finance", "processIds": [] }
+      ]
+    },
+    {
+      "id": "plant",
+      "name": "АО «Завод»",
+      "description": "Производственная организация со своими подразделениями планирования, закупок, продаж и склада.",
+      "directions": [
+        { "id": "planning", "name": "Планирование", "description": "Производственные планы и обеспечение потребностей.", "icon": "planning", "processIds": [] },
+        { "id": "procurement", "name": "Закупки", "description": "Обеспечение производства материалами и услугами.", "icon": "procurement", "processIds": ["purchase-materials"] },
+        { "id": "production", "name": "Производство", "description": "Выпуск и контроль качества продукции.", "icon": "production", "processIds": [] },
+        { "id": "warehouse", "name": "Склад", "description": "Приёмка, хранение и движение материалов.", "icon": "warehouse", "processIds": [] }
+      ]
+    },
+    {
+      "id": "communications",
+      "name": "ООО «Центр коммуникаций»",
+      "description": "Сервисная организация группы: коммуникации, юридическая и административная поддержка.",
+      "directions": [
+        { "id": "legal", "name": "Юридическая служба", "description": "Договорная работа и правовая поддержка организаций группы.", "icon": "legal", "processIds": [] },
+        { "id": "communications", "name": "Коммуникации", "description": "Внутренние и внешние коммуникации группы.", "icon": "communications", "processIds": [] }
+      ]
+    }
+  ],
+  "crossCompanyProcesses": [
+    {
+      "processId": "purchase-materials",
+      "legalEntityIds": ["plant", "communications"],
+      "description": "Демонстрационный сквозной процесс: закупка выполняется заводом с возможностью привлечения сервисной организации."
+    }
+  ]
+}

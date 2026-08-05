@@ -1,4 +1,4 @@
-import type { CommandExecution, ElementComment, ElementContextUpdate, OneCConnectionStatus, OneCIntegrationSettings, OneCIntegrationUpdate, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, SearchResult, Session, UserDirectory, UserNotification, UserProfile, UserUpdate } from './types';
+import type { CommandExecution, ElementComment, ElementContextUpdate, OneCConnectionStatus, OneCIntegrationSettings, OneCIntegrationUpdate, OrganizationMap, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, SearchResult, Session, UserDirectory, UserNotification, UserProfile, UserUpdate } from './types';
 
 let activeUser = localStorage.getItem('pn.demoUser') ?? 'demo-employee';
 export function setActiveUser(userId: string) { activeUser = userId; localStorage.setItem('pn.demoUser', userId); }
@@ -8,6 +8,12 @@ export async function loadSession(signal?: AbortSignal): Promise<Session> {
   const response = await fetch('/api/session', { signal, headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить профиль пользователя.'));
   return response.json() as Promise<Session>;
+}
+
+export async function loadOrganization(signal?: AbortSignal): Promise<OrganizationMap> {
+  const response = await fetch('/api/organization', { signal, headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить карту группы компаний.'));
+  return response.json() as Promise<OrganizationMap>;
 }
 
 export async function loadProcessAnalytics(processId: string): Promise<ProcessAnalytics> {
