@@ -255,3 +255,11 @@ See the [user manual](docs/user-manual.md) and [capability catalog](docs/capabil
 - Failed HTTP calls and negative 1C responses remain visible in the command audit journal.
 
 See the [1C integration contract](docs/one-c-integration.md) for the server-side HTTP service requirements.
+
+## Commit 0026 scope
+
+- Superadministrators can maintain the group name and description from the enterprise map.
+- Legal entities and their business directions can be added, edited and removed without changing JSON files manually.
+- Organization changes are validated and saved atomically by the local server.
+- The enterprise map reloads immediately after a successful update.
+- Referential validation protects legal entities already used by cross-company processes.

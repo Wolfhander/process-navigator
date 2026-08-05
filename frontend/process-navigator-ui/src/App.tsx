@@ -15,7 +15,8 @@ import { HelpDialog } from './HelpDialog';
 import { NotificationDialog } from './NotificationDialog';
 import { OneCIntegrationDialog } from './OneCIntegrationDialog';
 import { EnterpriseMap } from './EnterpriseMap';
-import type { ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, SearchResult, Session, UserNotification } from './types';
+import { OrganizationAdminDialog } from './OrganizationAdminDialog';
+import type { OrganizationMap, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, SearchResult, Session, UserNotification } from './types';
 
 const BpmnEditor = lazy(() => import('./BpmnEditor').then(module => ({ default: module.BpmnEditor })));
 
@@ -41,6 +42,8 @@ export default function App() {
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [oneCOpen, setOneCOpen] = useState(false);
   const [enterpriseOpen, setEnterpriseOpen] = useState(false);
+  const [organizationEditor, setOrganizationEditor] = useState<OrganizationMap>();
+  const [organizationReloadKey, setOrganizationReloadKey] = useState(0);
   const [pendingSearchResult, setPendingSearchResult] = useState<SearchResult>();
   const [activeInstance, setActiveInstance] = useState<ProcessInstance>();
   const [draftView, setDraftView] = useState(false);
@@ -210,6 +213,7 @@ export default function App() {
     }}
     />}
     {oneCOpen && <OneCIntegrationDialog onClose={() => setOneCOpen(false)}/>}
-    {enterpriseOpen && <EnterpriseMap catalog={catalog} onOpenProcess={openProcess}/>}
+    {enterpriseOpen && <EnterpriseMap key={organizationReloadKey} catalog={catalog} onOpenProcess={openProcess} canManage={can('system.manage')} onManage={setOrganizationEditor}/>}
+    {organizationEditor && <OrganizationAdminDialog organization={organizationEditor} onClose={() => setOrganizationEditor(undefined)} onSaved={() => { setOrganizationEditor(undefined); setOrganizationReloadKey(value => value + 1); notify('Организационная структура сохранена'); }}/>}
   </div>;
 }

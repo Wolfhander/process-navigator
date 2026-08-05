@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Boxes, Building2, Factory, Gavel, Landmark, MessagesSquare, PackageOpen, Shapes, ShoppingCart, UsersRound, Workflow } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Boxes, Building2, Factory, Gavel, Landmark, MessagesSquare, PackageOpen, Settings2, Shapes, ShoppingCart, UsersRound, Workflow } from 'lucide-react';
 import { loadOrganization } from './api';
 import type { BusinessDirection, OrganizationMap, ProcessSummary } from './types';
 import './enterprise-map.css';
 
-type Props = { catalog: ProcessSummary[]; onOpenProcess: (processId: string) => void };
+type Props = { catalog: ProcessSummary[]; onOpenProcess: (processId: string) => void; canManage?: boolean; onManage?: (organization: OrganizationMap) => void };
 
 const icons = { landmark: Landmark, finance: Landmark, planning: Shapes, procurement: ShoppingCart, production: Factory, warehouse: PackageOpen, legal: Gavel, communications: MessagesSquare };
 const directionIcon = (direction: BusinessDirection) => icons[direction.icon as keyof typeof icons] ?? Boxes;
 
-export function EnterpriseMap({ catalog, onOpenProcess }: Props) {
+export function EnterpriseMap({ catalog, onOpenProcess, canManage, onManage }: Props) {
   const [organization, setOrganization] = useState<OrganizationMap>();
   const [selectedEntityId, setSelectedEntityId] = useState<string>();
   const [error, setError] = useState('');
@@ -24,6 +24,7 @@ export function EnterpriseMap({ catalog, onOpenProcess }: Props) {
     <section className="enterprise-intro">
       <div>{selectedEntity && <button className="map-back" onClick={() => setSelectedEntityId(undefined)}><ArrowLeft size={15}/>Вся группа</button>}<span className="eyebrow">{selectedEntity ? 'Юридическое лицо' : 'Карта группы компаний'}</span><h1>{selectedEntity?.name ?? organization.name}</h1><p>{selectedEntity?.description ?? organization.description}</p></div>
       <div className="enterprise-summary"><span><Workflow size={20}/><strong>{catalog.length}</strong><small>процессов в каталоге</small></span><span><Building2 size={20}/><strong>{organization.legalEntities.length}</strong><small>юридических лица</small></span></div>
+      {canManage && !selectedEntity && <button className="map-manage" onClick={() => onManage?.(organization)}><Settings2 size={15}/>Настроить структуру</button>}
     </section>
 
     {!selectedEntity && <>

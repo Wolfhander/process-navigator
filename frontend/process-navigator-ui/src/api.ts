@@ -16,6 +16,12 @@ export async function loadOrganization(signal?: AbortSignal): Promise<Organizati
   return response.json() as Promise<OrganizationMap>;
 }
 
+export async function saveOrganization(update: OrganizationMap): Promise<OrganizationMap> {
+  const response = await fetch('/api/admin/organization', { method: 'PUT', headers: { ...roleHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(update) });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить организационную структуру.'));
+  return response.json() as Promise<OrganizationMap>;
+}
+
 export async function loadProcessAnalytics(processId: string): Promise<ProcessAnalytics> {
   const response = await fetch(`/api/processes/${encodeURIComponent(processId)}/analytics`, { headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить аналитику процесса.'));

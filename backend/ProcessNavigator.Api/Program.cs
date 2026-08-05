@@ -35,6 +35,14 @@ app.MapGet("/api/organization", async (HttpContext context, OrganizationMapServi
     catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Organization map validation failed"); }
 });
 
+app.MapPut("/api/admin/organization", async (OrganizationMapModel update, HttpContext context,
+    OrganizationMapService organization, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.ManageSystem)) return Forbidden(ProcessPermissions.ManageSystem);
+    try { return Results.Ok(await organization.SaveAsync(update, cancellationToken)); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "Organization map validation failed"); }
+});
+
 app.MapGet("/api/session", (HttpContext context, AccessControlService access) => Results.Ok(access.Session(context)));
 
 app.MapGet("/api/notifications", async (HttpContext context, NotificationService notifications,
