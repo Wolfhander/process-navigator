@@ -23,4 +23,10 @@ public sealed record BusinessDirectionModel(
 public sealed record CrossCompanyProcessModel(
     string ProcessId,
     IReadOnlyList<string> LegalEntityIds,
+    IReadOnlyList<LaneOrganizationModel> LaneOrganizations,
     string Description);
+
+public sealed record LaneOrganizationModel(
+    string LaneId,
+    string LegalEntityId,
+    string Department);

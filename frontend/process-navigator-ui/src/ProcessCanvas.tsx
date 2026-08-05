@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { resolveCapabilities } from './capabilities';
-import type { Edge, Point, ProcessModel, ProcessNode } from './types';
+import { loadOrganization } from './api';
+import type { Edge, OrganizationMap, Point, ProcessModel, ProcessNode } from './types';
 
 type ZoomCommand = { id: number; factor: number };
 type Props = {
@@ -77,6 +78,7 @@ export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitC
   const dragRef = useRef<{ pointerId: number; x: number; y: number; camera: Camera; moved: boolean } | undefined>(undefined);
   const suppressClickRef = useRef(false);
   const [camera, setCamera] = useState<Camera>(world);
+  const [organization, setOrganization] = useState<OrganizationMap>();
   const zoom = world.width / camera.width;
   const selectedNode = process.nodes.find(node => node.id === selectedId);
   const activeLane = process.lanes.find(lane => lane.id === selectedNode?.laneId)
@@ -85,6 +87,12 @@ export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitC
   const relatedNodes = new Set<string>([selectedId ?? '']);
   const personalLanes = new Set(personalLaneIds);
   const personalNodes = new Set(process.nodes.filter(node => personalLanes.has(node.laneId)).map(node => node.id));
+  const crossCompanyProcess = organization?.crossCompanyProcesses.find(item => item.processId === process.id);
+  const laneOrganization = (laneId: string) => {
+    const mapping = crossCompanyProcess?.laneOrganizations.find(item => item.laneId === laneId);
+    const entity = organization?.legalEntities.find(item => item.id === mapping?.legalEntityId);
+    return mapping && entity ? { entityName: entity.name, department: mapping.department } : undefined;
+  };
   process.edges.forEach(edge => {
     if (focusedEdges.has(edge.id)) {
       relatedNodes.add(edge.sourceId);
@@ -94,6 +102,7 @@ export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitC
 
   useEffect(() => { if (zoomCommand) setCamera(current => zoomAt(current, zoomCommand.factor, { x: current.x + current.width / 2, y: current.y + current.height / 2 })); }, [zoomCommand]);
   useEffect(() => { if (fitCommand !== undefined) setCamera(world); }, [fitCommand]);
+  useEffect(() => { const controller = new AbortController(); loadOrganization(controller.signal).then(setOrganization).catch(() => undefined); return () => controller.abort(); }, [process.id]);
 
   const pointFromClient = (clientX: number, clientY: number): Point => {
     const rect = svgRef.current!.getBoundingClientRect();
@@ -140,12 +149,12 @@ export function ProcessCanvas({ process, selectedId, onSelect, zoomCommand, fitC
     <svg ref={svgRef} className="canvas" viewBox={`${camera.x} ${camera.y} ${camera.width} ${camera.height}`} preserveAspectRatio="none" onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={stopPan} onPointerCancel={stopPan} onDoubleClick={() => setCamera(world)} onClick={() => { if (suppressClickRef.current) suppressClickRef.current = false; else onSelect(); }} aria-label="Диаграмма процесса">
       <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#dfe2dc" strokeWidth="1"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#47524b"/></marker><marker id="arrow-focus" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d4673c"/></marker></defs>
       <rect width={world.width} height={world.height} fill="url(#grid)"/>
-      <g className="lanes">{process.lanes.map(lane => <g key={lane.id} className={personalMode ? personalLanes.has(lane.id) ? 'is-personal' : 'is-muted' : ''}><rect className="lane" x="45" y={lane.y} width="1570" height={lane.height}/><foreignObject x="45" y={lane.y} width="55" height={lane.height}><div className="lane-title">{lane.name}</div></foreignObject></g>)}</g>
+      <g className="lanes">{process.lanes.map(lane => { const affiliation = laneOrganization(lane.id); return <g key={lane.id} className={personalMode ? personalLanes.has(lane.id) ? 'is-personal' : 'is-muted' : ''}><rect className="lane" x="45" y={lane.y} width="1570" height={lane.height}/><foreignObject x="45" y={lane.y} width="55" height={lane.height}><div className="lane-title">{lane.name}</div></foreignObject>{affiliation && <foreignObject x="1315" y={lane.y + 10} width="285" height="34"><div className="lane-organization"><strong>{affiliation.entityName}</strong><span>{affiliation.department}</span></div></foreignObject>}</g>; })}</g>
       <g className="edges">{process.edges.map(edge => { const label = labelPoint(edge); const focused = !!selectedId && focusedEdges.has(edge.id); const personal = personalMode && (personalNodes.has(edge.sourceId) || personalNodes.has(edge.targetId)); const muted = selectedId ? !focused : personalMode && !personal; return <g key={edge.id} className={`${focused ? 'is-focused' : personal ? 'is-personal' : ''}${muted ? ' is-muted' : ''}`}><path d={pathFor(edge)} markerEnd={focused || personal ? 'url(#arrow-focus)' : 'url(#arrow)'}/><text x={label.x} y={label.y} textAnchor="middle">{edge.label}</text></g>; })}</g>
       <g className="nodes" onClick={event => event.stopPropagation()}>{process.nodes.map(node => <NodeShape key={node.id} node={node} selected={node.id === selectedId} related={!!selectedId && relatedNodes.has(node.id) && node.id !== selectedId} personal={personalMode && personalNodes.has(node.id)} muted={selectedId ? !relatedNodes.has(node.id) : personalMode && !personalNodes.has(node.id)} executionStatus={stepStatuses[node.id]} showOverlays={zoom >= 1.25 || node.id === selectedId} onSelect={() => onSelect(node)}/>)}</g>
     </svg>
     <div className="zoom-readout">{Math.round(zoom * 100)}%</div>
-    {activeLane && (zoom >= 1.2 || selectedNode) && <div className="lane-badge"><span>{selectedNode ? 'Ответственная дорожка' : 'Текущая дорожка'}</span><strong>{activeLane.name}</strong></div>}
+    {activeLane && (zoom >= 1.2 || selectedNode) && <div className="lane-badge"><span>{selectedNode ? 'Ответственная дорожка' : 'Текущая дорожка'}</span><strong>{activeLane.name}</strong>{laneOrganization(activeLane.id) && <em>{laneOrganization(activeLane.id)?.entityName}</em>}</div>}
     <svg className="minimap" viewBox={`0 0 ${world.width} ${world.height}`} onClick={centerFromMinimap} aria-label="Мини-карта процесса">
       <rect className="minimap-bg" width={world.width} height={world.height}/>
       {process.lanes.map(lane => <rect key={lane.id} className="minimap-lane" x="45" y={lane.y} width="1570" height={lane.height}/>)}

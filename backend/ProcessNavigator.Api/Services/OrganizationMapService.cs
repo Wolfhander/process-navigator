@@ -27,7 +27,13 @@ public sealed class OrganizationMapService(IWebHostEnvironment environment)
             throw new InvalidDataException("Legal entity IDs must be unique.");
         var entityIds = model.LegalEntities.Select(item => item.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var process in model.CrossCompanyProcesses)
+        {
             if (process.LegalEntityIds.Count < 2 || process.LegalEntityIds.Any(id => !entityIds.Contains(id)))
                 throw new InvalidDataException($"Cross-company process '{process.ProcessId}' has invalid participants.");
+            if (process.LaneOrganizations.Any(item => !process.LegalEntityIds.Contains(item.LegalEntityId, StringComparer.OrdinalIgnoreCase)))
+                throw new InvalidDataException($"Cross-company process '{process.ProcessId}' maps a lane to a non-participating legal entity.");
+            if (process.LaneOrganizations.Select(item => item.LaneId).Distinct(StringComparer.Ordinal).Count() != process.LaneOrganizations.Count)
+                throw new InvalidDataException($"Cross-company process '{process.ProcessId}' maps the same lane more than once.");
+        }
     }
 }

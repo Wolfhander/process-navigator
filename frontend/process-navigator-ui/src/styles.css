@@ -52,6 +52,9 @@ nav strong { color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-sp
 .lane-badge { position:absolute; left:84px; top:28px; display:flex; align-items:center; gap:8px; max-width:260px; padding:6px 10px; color:#536158; background:rgba(248,249,245,.94); border:1px solid var(--line); border-radius:7px; font-size:9px; pointer-events:none; box-shadow:0 3px 10px rgba(30,45,35,.05); }
 .lane-badge span { color:#849087; text-transform:uppercase; letter-spacing:.06em; }
 .lane-badge strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#2d4035; font-size:10px; }
+.lane-badge em { max-width:125px; overflow:hidden; padding-left:8px; border-left:1px solid var(--line); color:#8b4a31; font-size:8px; font-style:normal; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+.lane-organization { display:flex; align-items:flex-end; justify-content:flex-end; flex-direction:column; gap:2px; padding:5px 8px; color:#52665a; background:rgba(242,246,241,.88); border:1px solid #d5ddd5; border-radius:7px; font:700 8px Manrope,sans-serif; line-height:1.15; text-align:right; }
+.lane-organization span { color:#7d8981; font-size:7px; font-weight:500; }
 .minimap { position:absolute; right:28px; bottom:27px; width:190px; height:94px; border:1px solid #bdc5bd; border-radius:8px; background:rgba(250,251,247,.96); box-shadow:0 5px 20px rgba(30,45,35,.12); cursor:crosshair; overflow:hidden; }
 .minimap-bg { fill:#f8f9f5; }
 .minimap-lane { fill:#fbfcf9; stroke:#aeb7af; stroke-width:5; }

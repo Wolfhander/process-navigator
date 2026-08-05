@@ -37,6 +37,12 @@
     {
       "processId": "purchase-materials",
       "legalEntityIds": ["plant", "communications"],
+      "laneOrganizations": [
+        { "laneId": "Lane_Requester", "legalEntityId": "plant", "department": "Инициирующее подразделение" },
+        { "laneId": "Lane_Buyer", "legalEntityId": "plant", "department": "Отдел закупок" },
+        { "laneId": "Lane_Finance", "legalEntityId": "communications", "department": "Центр финансового сопровождения" },
+        { "laneId": "Lane_Warehouse", "legalEntityId": "plant", "department": "Склад" }
+      ],
       "description": "Демонстрационный сквозной процесс: закупка выполняется заводом с возможностью привлечения сервисной организации."
     }
   ]
