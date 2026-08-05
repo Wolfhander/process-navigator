@@ -3,7 +3,7 @@ using ProcessNavigator.Api.Models;
 
 namespace ProcessNavigator.Api.Services;
 
-public sealed class ProcessCommandService(IWebHostEnvironment environment)
+public sealed class ProcessCommandService(IWebHostEnvironment environment, OneCIntegrationService oneC)
 {
     private readonly string root = Path.Combine(environment.ContentRootPath, "Data", "Commands");
     private readonly SemaphoreSlim writeLock = new(1, 1);
@@ -17,18 +17,18 @@ public sealed class ProcessCommandService(IWebHostEnvironment environment)
         if (kind is not ("ERP" or "REPORT" or "URL" or "FILE"))
             throw new InvalidDataException($"Тип команды '{action.Kind}' не поддерживается.");
 
-        // This adapter boundary is intentionally local. A 1C adapter will replace the
-        // simulated ERP branch without changing the process context or HTTP contract.
-        var externalReference = kind == "ERP" ? $"1C-DEMO-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}" : action.Target;
+        var oneCResult = kind == "ERP" ? await oneC.ExecuteAsync(new OneCCommandRequestModel(process.Id, process.Version,
+            node.Id, node.Name, action.Id, action.Label, action.Target, instanceId, userId), cancellationToken) : null;
+        var externalReference = oneCResult?.ExternalReference ?? action.Target;
         var message = kind switch
         {
-            "ERP" => "Команда принята локальным адаптером 1С:ERP.",
+            "ERP" => oneCResult!.Message,
             "REPORT" => "Отчёт подготовлен к открытию.",
             "URL" => "Ссылка проверена и подготовлена к открытию.",
             _ => "Файл подготовлен к открытию."
         };
         var result = new CommandExecutionModel(Guid.NewGuid().ToString("N"), process.Id, elementId, action.Id,
-            action.Label, kind, action.Target, instanceId, userId, "Succeeded", message, externalReference, DateTimeOffset.UtcNow);
+            action.Label, kind, action.Target, instanceId, userId, oneCResult?.Succeeded == false ? "Failed" : "Succeeded", message, externalReference, DateTimeOffset.UtcNow);
         await AppendAsync(result, cancellationToken);
         return result;
     }

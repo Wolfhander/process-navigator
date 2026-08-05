@@ -3,6 +3,7 @@ using System.Text;
 using ProcessNavigator.Api.Models;
 using ProcessNavigator.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -17,6 +18,9 @@ builder.Services.AddSingleton<ProcessCommandService>();
 builder.Services.AddSingleton<ProcessSearchService>();
 builder.Services.AddSingleton<ElementCommentService>();
 builder.Services.AddSingleton<NotificationService>();
+builder.Services.AddDataProtection();
+builder.Services.AddHttpClient("one-c", client => client.DefaultRequestHeaders.UserAgent.ParseAdd("ProcessNavigator/0.1"));
+builder.Services.AddSingleton<OneCIntegrationService>();
 
 var app = builder.Build();
 
@@ -33,6 +37,24 @@ app.MapPut("/api/notifications/{notificationId}/read", async (string notificatio
 {
     try { return Results.Ok(await notifications.MarkReadAsync(notificationId, access.CurrentUser(context).Id, cancellationToken)); }
     catch (KeyNotFoundException) { return Results.NotFound(); }
+});
+
+app.MapGet("/api/admin/integrations/one-c", (HttpContext context, OneCIntegrationService oneC, AccessControlService access) =>
+    access.Has(context, ProcessPermissions.ManageSystem) ? Results.Ok(oneC.GetSettings()) : Forbidden(ProcessPermissions.ManageSystem));
+
+app.MapPut("/api/admin/integrations/one-c", async (OneCIntegrationUpdateModel update, HttpContext context,
+    OneCIntegrationService oneC, AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.ManageSystem)) return Forbidden(ProcessPermissions.ManageSystem);
+    try { return Results.Ok(await oneC.UpdateAsync(update, cancellationToken)); }
+    catch (InvalidDataException exception) { return Results.Problem(exception.Message, statusCode: 422, title: "1C integration validation failed"); }
+});
+
+app.MapPost("/api/admin/integrations/one-c/test", async (HttpContext context, OneCIntegrationService oneC,
+    AccessControlService access, CancellationToken cancellationToken) =>
+{
+    if (!access.Has(context, ProcessPermissions.ManageSystem)) return Forbidden(ProcessPermissions.ManageSystem);
+    return Results.Ok(await oneC.TestAsync(cancellationToken));
 });
 
 app.MapPut("/api/notifications/read-all", async (HttpContext context, NotificationService notifications,

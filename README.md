@@ -232,3 +232,14 @@ See the [user manual](docs/user-manual.md) and [capability catalog](docs/capabil
 - The header bell shows the unread counter and opens the personal notification center.
 - Opening a notification marks it as read and navigates to the related BPMN element.
 - Users can mark the entire notification inbox as read.
+
+## Commit 0022 scope
+
+- Configurable HTTP integration with an internal 1C:ERP server.
+- Superadministrator interface for endpoint paths, credentials, timeout and demo/real mode.
+- Passwords are protected server-side and are never returned to the browser.
+- Connection diagnostics are available before enabling process commands.
+- ERP command payloads include process, version, BPMN element, action, instance and user context.
+- Failed HTTP calls and negative 1C responses remain visible in the command audit journal.
+
+See the [1C integration contract](docs/one-c-integration.md) for the server-side HTTP service requirements.

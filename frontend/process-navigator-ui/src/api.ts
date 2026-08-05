@@ -1,4 +1,4 @@
-import type { CommandExecution, ElementComment, ElementContextUpdate, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, SearchResult, Session, UserDirectory, UserNotification, UserProfile, UserUpdate } from './types';
+import type { CommandExecution, ElementComment, ElementContextUpdate, OneCConnectionStatus, OneCIntegrationSettings, OneCIntegrationUpdate, ProcessAnalytics, ProcessAssignments, ProcessImportResult, ProcessInstance, ProcessModel, ProcessNode, ProcessSummary, ProcessVersion, RepositoryArtifact, RepositoryArtifactUpload, SearchResult, Session, UserDirectory, UserNotification, UserProfile, UserUpdate } from './types';
 
 let activeUser = localStorage.getItem('pn.demoUser') ?? 'demo-employee';
 export function setActiveUser(userId: string) { activeUser = userId; localStorage.setItem('pn.demoUser', userId); }
@@ -65,6 +65,24 @@ export async function markNotificationRead(notificationId: string): Promise<User
 export async function markAllNotificationsRead(): Promise<void> {
   const response = await fetch('/api/notifications/read-all', { method: 'PUT', headers: roleHeaders() });
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось отметить уведомления прочитанными.'));
+}
+
+export async function loadOneCSettings(): Promise<OneCIntegrationSettings> {
+  const response = await fetch('/api/admin/integrations/one-c', { headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось загрузить настройки 1С.'));
+  return response.json() as Promise<OneCIntegrationSettings>;
+}
+
+export async function saveOneCSettings(update: OneCIntegrationUpdate): Promise<OneCIntegrationSettings> {
+  const response = await fetch('/api/admin/integrations/one-c', { method: 'PUT', headers: { ...roleHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(update) });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить настройки 1С.'));
+  return response.json() as Promise<OneCIntegrationSettings>;
+}
+
+export async function testOneCConnection(): Promise<OneCConnectionStatus> {
+  const response = await fetch('/api/admin/integrations/one-c/test', { method: 'POST', headers: roleHeaders() });
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось проверить соединение с 1С.'));
+  return response.json() as Promise<OneCConnectionStatus>;
 }
 
 export async function loadUserDirectory(): Promise<UserDirectory> {
