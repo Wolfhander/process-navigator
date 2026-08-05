@@ -5,6 +5,8 @@
 .map-back { display:flex; align-items:center; gap:6px; margin:0 0 12px; padding:0; border:0; background:transparent; color:var(--green); font-size:10px; font-weight:700; cursor:pointer; }
 .map-manage { display:flex; align-items:center; gap:7px; flex:0 0 auto; padding:10px 13px; border:1px solid #bdcbbf; border-radius:9px; background:rgba(255,255,255,.82); color:var(--green); font-size:10px; font-weight:700; cursor:pointer; box-shadow:0 7px 18px rgba(39,60,46,.05); }
 .map-manage:hover { border-color:#718b78; background:#fff; }
+.entity-view-tabs { display:flex; gap:6px; max-width:1500px; margin:0 auto 15px; }.entity-view-tabs button { display:flex; align-items:center; gap:7px; padding:9px 13px; border:1px solid #d1d9d1; border-radius:9px; background:rgba(255,255,255,.72); color:#69766d; font-size:10px; font-weight:700; cursor:pointer; }.entity-view-tabs button.is-active { border-color:#6e8875; background:var(--green); color:#fff; }.entity-view-tabs span { padding:1px 6px; border-radius:9px; background:rgba(255,255,255,.18); font-size:8px; }
+.entity-structure { max-width:1500px; margin:0 auto; padding:16px; border:1px solid #d4ddd5; border-radius:14px; background:rgba(248,250,246,.82); }
 .enterprise-summary { display:flex; gap:9px; }
 .enterprise-summary>span { display:grid; grid-template-columns:28px auto; grid-template-rows:auto auto; min-width:155px; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.8); box-shadow:0 8px 24px rgba(39,60,46,.05); }
 .enterprise-summary svg { grid-row:1/3; align-self:center; color:#557060; }.enterprise-summary strong { font-size:19px; line-height:1; }.enterprise-summary small { margin-top:4px; color:var(--muted); font-size:9px; }

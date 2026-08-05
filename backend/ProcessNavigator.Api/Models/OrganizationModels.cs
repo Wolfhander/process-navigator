@@ -11,7 +11,15 @@ public sealed record LegalEntityModel(
     string Id,
     string Name,
     string Description,
-    IReadOnlyList<BusinessDirectionModel> Directions);
+    IReadOnlyList<BusinessDirectionModel> Directions,
+    IReadOnlyList<OrganizationUnitModel>? Units = null);
+
+public sealed record OrganizationUnitModel(
+    string Id,
+    string? ParentId,
+    string Name,
+    string ShortName,
+    string ManagerPosition);
 
 public sealed record BusinessDirectionModel(
     string Id,

@@ -263,3 +263,11 @@ See the [1C integration contract](docs/one-c-integration.md) for the server-side
 - Organization changes are validated and saved atomically by the local server.
 - The enterprise map reloads immediately after a successful update.
 - Referential validation protects legal entities already used by cross-company processes.
+
+## Commit 0027 scope
+
+- Legal entities now contain a separate multi-level hierarchy of organization units.
+- The demo hierarchy is based on the supplied organization workbook: 76 units across the corporation, plant and communication center.
+- Every unit keeps its parent, full name, short name and manager position.
+- The enterprise map offers a collapsible organization-tree view with search by unit or manager.
+- Server validation rejects missing parents, duplicate identifiers and circular reporting lines.

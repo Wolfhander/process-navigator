@@ -56,6 +56,7 @@ public sealed class OrganizationMapService(IWebHostEnvironment environment)
                 throw new InvalidDataException($"Direction IDs must be unique within '{entity.Name}'.");
             if (entity.Directions.Any(item => string.IsNullOrWhiteSpace(item.Id) || string.IsNullOrWhiteSpace(item.Name)))
                 throw new InvalidDataException($"Every direction in '{entity.Name}' must have an ID and name.");
+            ValidateUnits(entity);
         }
         foreach (var process in model.CrossCompanyProcesses)
         {
@@ -65,6 +66,29 @@ public sealed class OrganizationMapService(IWebHostEnvironment environment)
                 throw new InvalidDataException($"Cross-company process '{process.ProcessId}' maps a lane to a non-participating legal entity.");
             if (process.LaneOrganizations.Select(item => item.LaneId).Distinct(StringComparer.Ordinal).Count() != process.LaneOrganizations.Count)
                 throw new InvalidDataException($"Cross-company process '{process.ProcessId}' maps the same lane more than once.");
+        }
+    }
+
+    private static void ValidateUnits(LegalEntityModel entity)
+    {
+        var units = entity.Units ?? [];
+        if (units.Count > 500) throw new InvalidDataException($"Legal entity '{entity.Name}' has too many organization units.");
+        if (units.Select(item => item.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != units.Count)
+            throw new InvalidDataException($"Organization unit IDs must be unique within '{entity.Name}'.");
+        var ids = units.Select(item => item.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var unit in units)
+        {
+            if (string.IsNullOrWhiteSpace(unit.Id) || string.IsNullOrWhiteSpace(unit.Name))
+                throw new InvalidDataException($"Every organization unit in '{entity.Name}' must have an ID and name.");
+            if (unit.ParentId is not null && (!ids.Contains(unit.ParentId) || unit.ParentId.Equals(unit.Id, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidDataException($"Organization unit '{unit.Name}' has an invalid parent.");
+            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { unit.Id };
+            var parentId = unit.ParentId;
+            while (parentId is not null)
+            {
+                if (!visited.Add(parentId)) throw new InvalidDataException($"Organization hierarchy in '{entity.Name}' contains a cycle.");
+                parentId = units.First(item => item.Id.Equals(parentId, StringComparison.OrdinalIgnoreCase)).ParentId;
+            }
         }
     }
 }
